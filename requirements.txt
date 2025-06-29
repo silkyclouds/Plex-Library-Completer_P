@@ -1,0 +1,10 @@
+plexapi==4.13.1
+spotipy==2.23.0
+python-dotenv==1.1.1
+thefuzz[speedup]==0.22.1
+requests==2.32.4
+google-generativeai==0.8.5
+streamrip==2.1.0
+Flask==3.1.1
+pandas==2.3.0
+plotly==6.2.0

@@ -1,0 +1,81 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+# Di solito questi file sono scritti da uno script python da un template
+# prima che PyInstaller costruisca l'eseguibile, per iniettare data/altre informazioni.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Tipi di file per Jupyter Notebook
+.ipynb_checkpoints
+
+# File di configurazione di IDE e editor
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# File specifici del sistema operativo
+.DS_Store
+Thumbs.db
+
+# File di ambiente
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak
+venv.bak
+
+# File di log
+*.log
+
+# Custom Ignores
+.claude/
+config.toml

@@ -1,0 +1,18 @@
+# Ignora i file di download per evitare conflitti con mount
+*.mp3
+*.flac
+Armageddon - The Album/
+Jeff Lynne's ELO/
+Jewel/
+REO Speedwagon/
+Survivor/
+Bluvertigo/
+
+# Ignora altri file non necessari
+node_modules/
+.git/
+.env
+*.log
+__pycache__/
+*.pyc
+.pytest_cache/

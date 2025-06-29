@@ -1,0 +1,587 @@
+{% extends 'base.html' %}
+
+{% block title %}Statistiche Musicali{% endblock %}
+
+{% block extra_style %}
+.stat-card {
+    background: var(--gradient-card);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    transition: all var(--transition-normal);
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    border-color: rgba(255,255,255,0.15);
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.stat-label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 0.5rem;
+}
+
+.stat-icon {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    opacity: 0.3;
+    width: 48px;
+    height: 48px;
+}
+
+.chart-container {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    min-height: 400px;
+}
+
+.chart-container h4 {
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.analysis-toggle {
+    background: var(--bg-tertiary);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius-lg);
+    padding: 0.5rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.analysis-toggle .btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+    font-weight: 500;
+}
+
+.analysis-toggle .btn.active {
+    background: var(--spotify-green);
+    color: #000;
+    box-shadow: var(--shadow-sm);
+}
+
+.analysis-toggle .btn:hover:not(.active) {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.quick-insights {
+    background: var(--gradient-card);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.insight-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.insight-item:last-child {
+    border-bottom: none;
+}
+
+.insight-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--gradient-primary);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    color: #000;
+}
+
+.insight-content {
+    flex: 1;
+}
+
+.insight-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.insight-description {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.refresh-notice {
+    background: rgba(29, 185, 84, 0.1);
+    border: 1px solid rgba(29, 185, 84, 0.3);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.loading-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 300px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+/* Stili per badge fonte dati */
+.badge {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+}
+
+.badge.bg-primary {
+    background: var(--spotify-green) !important;
+    color: #000;
+}
+
+.badge.bg-success {
+    background: linear-gradient(135deg, #28a745, #20c997) !important;
+    color: #fff;
+}
+
+@media (max-width: 768px) {
+    .stat-number {
+        font-size: 2rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .chart-container {
+        padding: 1rem;
+    }
+    
+    .badge {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.6rem;
+    }
+}
+{% endblock %}
+
+{% block content %}
+<!-- Header Section -->
+<div class="d-flex align-items-center mb-4 animate-slide-up">
+    <div class="me-4">
+        <div style="width: 80px; height: 80px; background: var(--gradient-primary); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
+            <i data-lucide="bar-chart-3" style="width: 40px; height: 40px; color: #000;"></i>
+        </div>
+    </div>
+    <div>
+        <h1 class="mb-2" style="font-size: 2.5rem; font-weight: 700;">Statistiche Musicali</h1>
+        <p class="text-secondary mb-2">Analisi approfondita della tua libreria musicale</p>
+        {% if data_source %}
+        <div class="d-flex align-items-center gap-2">
+            {% if data_source.type == 'playlist' %}
+                <span class="badge bg-primary d-flex align-items-center gap-1">
+                    <i data-lucide="list-music" style="width: 14px; height: 14px;"></i>
+                    Playlist: {{ data_source.name }}
+                </span>
+            {% elif data_source.type == 'library' %}
+                <span class="badge bg-success d-flex align-items-center gap-1">
+                    <i data-lucide="library" style="width: 14px; height: 14px;"></i>
+                    {{ data_source.name }}
+                </span>
+            {% endif %}
+            {% if data_source.id %}
+                <small class="text-muted">ID: {{ data_source.id }}</small>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Controls Section -->
+<div class="card mb-4 animate-slide-up" style="animation-delay: 0.1s;">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-4">
+                <form class="d-flex align-items-center gap-3" method="get">
+                    <div class="d-flex align-items-center">
+                        <i data-lucide="user" class="me-2" style="width: 20px; height: 20px; color: var(--spotify-green);"></i>
+                        <label for="user-select" class="form-label mb-0 fw-medium">Utente:</label>
+                    </div>
+                    <select name="user" id="user-select" class="form-select" onchange="this.form.submit()">
+                        <option value="main" {% if selected_user == 'main' %}selected{% endif %}>{{ aliases.main }}</option>
+                        <option value="secondary" {% if selected_user == 'secondary' %}selected{% endif %}>{{ aliases.secondary }}</option>
+                    </select>
+                    <input type="hidden" name="type" value="{{ analysis_type }}">
+                </form>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="analysis-toggle">
+                    <a href="{{ url_for('stats', user=selected_user, type='favorites') }}" 
+                       class="btn {% if analysis_type == 'favorites' %}active{% endif %}">
+                        <i data-lucide="heart" class="me-2" style="width: 16px; height: 16px;"></i>
+                        Playlist Preferiti
+                    </a>
+                    <a href="{{ url_for('stats', user=selected_user, type='library') }}" 
+                       class="btn {% if analysis_type == 'library' %}active{% endif %}">
+                        <i data-lucide="library" class="me-2" style="width: 16px; height: 16px;"></i>
+                        Intera Libreria
+                    </a>
+                </div>
+            </div>
+            
+            <div class="col-md-4 text-end">
+                <a href="{{ url_for('stats', user=selected_user, type=analysis_type, refresh='true') }}" 
+                   class="btn btn-secondary d-flex align-items-center justify-content-center">
+                    <i data-lucide="refresh-cw" class="me-2" style="width: 16px; height: 16px;"></i>
+                    Aggiorna Cache
+                </a>
+                <small class="text-muted mt-1 d-block">Operazione lenta - usa solo se necessario</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if library_stats %}
+<!-- Quick Statistics Grid -->
+<div class="stats-grid animate-slide-up" style="animation-delay: 0.2s;">
+    <div class="stat-card">
+        <i data-lucide="music" class="stat-icon"></i>
+        <div class="stat-number">{{ "{:,}".format(library_stats.total_tracks) }}</div>
+        <div class="stat-label">Tracce Totali</div>
+    </div>
+    
+    <div class="stat-card">
+        <i data-lucide="users" class="stat-icon"></i>
+        <div class="stat-number">{{ "{:,}".format(library_stats.unique_artists) }}</div>
+        <div class="stat-label">Artisti Unici</div>
+    </div>
+    
+    <div class="stat-card">
+        <i data-lucide="disc" class="stat-icon"></i>
+        <div class="stat-number">{{ "{:,}".format(library_stats.unique_albums) }}</div>
+        <div class="stat-label">Album Unici</div>
+    </div>
+    
+    <div class="stat-card">
+        <i data-lucide="tag" class="stat-icon"></i>
+        <div class="stat-number">{{ library_stats.unique_genres }}</div>
+        <div class="stat-label">Generi Diversi</div>
+    </div>
+    
+    {% if library_stats.total_duration_hours %}
+    <div class="stat-card">
+        <i data-lucide="clock" class="stat-icon"></i>
+        <div class="stat-number">{{ library_stats.total_duration_hours }}</div>
+        <div class="stat-label">Ore di Musica</div>
+    </div>
+    {% endif %}
+    
+    {% if library_stats.average_year %}
+    <div class="stat-card">
+        <i data-lucide="calendar" class="stat-icon"></i>
+        <div class="stat-number">{{ library_stats.average_year }}</div>
+        <div class="stat-label">Anno Medio</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Quick Insights -->
+<div class="quick-insights animate-slide-up" style="animation-delay: 0.3s;">
+    <h4 class="mb-3">
+        <i data-lucide="lightbulb" style="width: 24px; height: 24px; color: var(--accent-yellow);"></i>
+        Insights Rapidi
+    </h4>
+    
+    <div class="row">
+        <div class="col-md-6">
+            {% if library_stats.top_artist %}
+            <div class="insight-item">
+                <div class="insight-icon">
+                    <i data-lucide="star" style="width: 20px; height: 20px;"></i>
+                </div>
+                <div class="insight-content">
+                    <div class="insight-title">Artista Top</div>
+                    <div class="insight-description">{{ library_stats.top_artist }} con {{ library_stats.top_artist_count }} tracce</div>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if library_stats.top_genre %}
+            <div class="insight-item">
+                <div class="insight-icon">
+                    <i data-lucide="headphones" style="width: 20px; height: 20px;"></i>
+                </div>
+                <div class="insight-content">
+                    <div class="insight-title">Genere Preferito</div>
+                    <div class="insight-description">{{ library_stats.top_genre }} ({{ library_stats.top_genre_count }} tracce)</div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-md-6">
+            {% if library_stats.top_decade %}
+            <div class="insight-item">
+                <div class="insight-icon">
+                    <i data-lucide="vinyl" style="width: 20px; height: 20px;"></i>
+                </div>
+                <div class="insight-content">
+                    <div class="insight-title">Decennio Dominante</div>
+                    <div class="insight-description">{{ library_stats.top_decade }} con {{ library_stats.top_decade_count }} tracce</div>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if library_stats.average_duration %}
+            <div class="insight-item">
+                <div class="insight-icon">
+                    <i data-lucide="timer" style="width: 20px; height: 20px;"></i>
+                </div>
+                <div class="insight-content">
+                    <div class="insight-title">Durata Media</div>
+                    <div class="insight-description">{{ library_stats.average_duration }} minuti per traccia</div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Charts Section -->
+<div class="row">
+    <!-- Genre Chart -->
+    <div class="col-lg-6 mb-4">
+        <div class="chart-container animate-slide-up" style="animation-delay: 0.4s;">
+            <h4>
+                <i data-lucide="pie-chart" style="width: 24px; height: 24px; color: var(--spotify-green);"></i>
+                Distribuzione Generi
+            </h4>
+            <div id="genre-chart">
+                {{ charts.genre_chart | safe }}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Decade Chart -->
+    <div class="col-lg-6 mb-4">
+        <div class="chart-container animate-slide-up" style="animation-delay: 0.5s;">
+            <h4>
+                <i data-lucide="bar-chart-2" style="width: 24px; height: 24px; color: var(--accent-blue);"></i>
+                Distribuzione per Decennio
+            </h4>
+            <div id="decade-chart">
+                {{ charts.decade_chart | safe }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Top Artists Chart -->
+    <div class="col-lg-8 mb-4">
+        <div class="chart-container animate-slide-up" style="animation-delay: 0.6s;">
+            <h4>
+                <i data-lucide="user-check" style="width: 24px; height: 24px; color: var(--accent-purple);"></i>
+                Top 15 Artisti
+            </h4>
+            <div id="artists-chart">
+                {{ charts.artists_chart | safe }}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Duration Distribution -->
+    <div class="col-lg-4 mb-4">
+        <div class="chart-container animate-slide-up" style="animation-delay: 0.7s;">
+            <h4>
+                <i data-lucide="clock" style="width: 24px; height: 24px; color: var(--accent-yellow);"></i>
+                Durata Tracce
+            </h4>
+            <div id="duration-chart">
+                {{ charts.duration_chart | safe }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Year Trend Chart -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="chart-container animate-slide-up" style="animation-delay: 0.8s;">
+            <h4>
+                <i data-lucide="trending-up" style="width: 24px; height: 24px; color: var(--accent-red);"></i>
+                Trend Tracce per Anno
+            </h4>
+            <div id="trend-chart">
+                {{ charts.trend_chart | safe }}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if library_stats and library_stats.oldest_track and library_stats.newest_track %}
+<!-- Additional Insights -->
+<div class="card animate-slide-up" style="animation-delay: 0.9s;">
+    <div class="card-body">
+        <h4 class="mb-3">
+            <i data-lucide="info" style="width: 24px; height: 24px; color: var(--spotify-green);"></i>
+            Dettagli Temporali
+        </h4>
+        
+        <div class="row text-center">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number">{{ library_stats.oldest_track }}</div>
+                    <div class="stat-label">Traccia più Vecchia</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number">{{ library_stats.newest_track }}</div>
+                    <div class="stat-label">Traccia più Recente</div>
+                </div>
+            </div>
+            {% if library_stats.shortest_track %}
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number">{{ library_stats.shortest_track }}</div>
+                    <div class="stat-label">Più Corta (min)</div>
+                </div>
+            </div>
+            {% endif %}
+            {% if library_stats.longest_track %}
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number">{{ library_stats.longest_track }}</div>
+                    <div class="stat-label">Più Lunga (min)</div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if error_message %}
+<!-- Error State -->
+<div class="text-center py-5 animate-slide-up">
+    <i data-lucide="alert-circle" style="width: 80px; height: 80px; color: var(--accent-red);" class="mb-3"></i>
+    <h3 class="mb-3">Errore nel Caricamento</h3>
+    <p class="text-secondary mb-4">{{ error_message }}</p>
+    <a href="{{ url_for('stats', user=selected_user, type=analysis_type, refresh='true') }}" 
+       class="btn btn-primary">
+        <i data-lucide="refresh-cw" class="me-2" style="width: 16px; height: 16px;"></i>
+        Riprova
+    </a>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Initialize icons
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+    
+    // Add hover effects to stat cards
+    $('.stat-card').hover(
+        function() {
+            $(this).css('transform', 'translateY(-4px)');
+        },
+        function() {
+            $(this).css('transform', 'translateY(0)');
+        }
+    );
+    
+    // Auto-refresh charts on window resize
+    let resizeTimeout;
+    $(window).resize(function() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(function() {
+            // Plotly charts auto-resize, but we can trigger manual resize if needed
+            if (window.Plotly) {
+                $('.chart-container [id$="-chart"]').each(function() {
+                    const plotDiv = $(this).find('.plotly-graph-div')[0];
+                    if (plotDiv) {
+                        window.Plotly.Plots.resize(plotDiv);
+                    }
+                });
+            }
+        }, 250);
+    });
+    
+    // Add loading states for refresh
+    $('a[href*="refresh=true"]').on('click', function() {
+        const btn = $(this);
+        const originalHtml = btn.html();
+        
+        btn.html('<i data-lucide="loader" class="me-2" style="width: 16px; height: 16px;"></i>Caricamento...');
+        btn.prop('disabled', true);
+        
+        // Re-initialize icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    });
+    
+    // Progressive chart loading animation
+    $('.chart-container').each(function(index) {
+        $(this).css({
+            'opacity': '0',
+            'transform': 'translateY(20px)'
+        });
+        
+        setTimeout(() => {
+            $(this).animate({
+                'opacity': '1',
+                'transform': 'translateY(0)'
+            }, 600);
+        }, index * 200);
+    });
+});
+</script>
+{% endblock %}

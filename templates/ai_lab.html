@@ -1,0 +1,829 @@
+{% extends 'base.html' %}
+
+{% block title %}Laboratorio AI{% endblock %}
+
+{% block extra_style %}
+.ai-preset-card {
+    background: var(--gradient-card);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-fast);
+    cursor: pointer;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.ai-preset-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--spotify-green);
+    box-shadow: 0 8px 25px rgba(29, 185, 84, 0.2);
+}
+
+.ai-preset-card.selected {
+    border-color: var(--spotify-green);
+    background: rgba(29, 185, 84, 0.1);
+}
+
+.preset-icon {
+    width: 48px;
+    height: 48px;
+    background: var(--gradient-primary);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    color: #000;
+}
+
+.suggestion-pill {
+    background: var(--bg-tertiary);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius-lg);
+    padding: 0.5rem 1rem;
+    margin: 0.25rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: inline-block;
+    font-size: 0.85rem;
+}
+
+.suggestion-pill:hover {
+    background: var(--bg-hover);
+    border-color: var(--spotify-green);
+    transform: translateY(-1px);
+}
+
+.suggestion-pill.active {
+    background: var(--spotify-green);
+    color: #000;
+    border-color: var(--spotify-green);
+}
+
+.chat-container {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    height: 400px;
+    overflow-y: auto;
+    padding: 1rem;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.chat-message {
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    border-radius: var(--radius-md);
+    max-width: 80%;
+    position: relative;
+}
+
+.chat-message.user {
+    background: var(--spotify-green);
+    color: #000;
+    margin-left: auto;
+    text-align: right;
+}
+
+.chat-message.assistant {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    margin-right: auto;
+}
+
+.chat-message .timestamp {
+    font-size: 0.7rem;
+    opacity: 0.7;
+    margin-top: 0.5rem;
+}
+
+.prompt-input-container {
+    position: relative;
+}
+
+.prompt-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius-md);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+}
+
+.suggestion-item {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.suggestion-item:hover {
+    background: var(--bg-hover);
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.playlist-timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 1.5rem;
+}
+
+.timeline-item:before {
+    content: '';
+    position: absolute;
+    left: -1.5rem;
+    top: 0.5rem;
+    width: 12px;
+    height: 12px;
+    background: var(--spotify-green);
+    border-radius: 50%;
+}
+
+.timeline-item:after {
+    content: '';
+    position: absolute;
+    left: -1.06rem;
+    top: 1.5rem;
+    width: 2px;
+    height: calc(100% - 1rem);
+    background: rgba(29, 185, 84, 0.3);
+}
+
+.timeline-item:last-child:after {
+    display: none;
+}
+{% endblock %}
+
+{% block content %}
+<!-- Header Section with Modern Design -->
+<div class="d-flex align-items-center mb-4 animate-slide-up">
+    <div class="me-4">
+        <div style="width: 80px; height: 80px; background: var(--gradient-primary); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
+            <i data-lucide="brain" style="width: 40px; height: 40px; color: #000;"></i>
+        </div>
+    </div>
+    <div>
+        <h1 class="mb-2" style="font-size: 2.5rem; font-weight: 700;">Laboratorio AI</h1>
+        <p class="text-secondary mb-0">Crea playlist intelligenti con l'aiuto dell'intelligenza artificiale</p>
+    </div>
+</div>
+
+<!-- User Selection -->
+<div class="card mb-4 animate-slide-up" style="animation-delay: 0.1s;">
+    <div class="card-body">
+        <form class="d-flex align-items-center gap-3" id="user-filter-form" method="get" action="{{ url_for('ai_lab') }}">
+            <div class="d-flex align-items-center">
+                <i data-lucide="user" class="me-2" style="width: 20px; height: 20px; color: var(--spotify-green);"></i>
+                <label for="user-select" class="form-label mb-0 fw-medium">Genera playlist per:</label>
+            </div>
+            <select name="user" id="user-select" class="form-select" style="max-width: 200px;" onchange="this.form.submit()">
+                <option value="main" {% if selected_user == 'main' %}selected{% endif %}>{{ aliases.main }}</option>
+                <option value="secondary" {% if selected_user == 'secondary' %}selected{% endif %}>{{ aliases.secondary }}</option>
+            </select>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <!-- AI Presets Section -->
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100 animate-slide-up" style="animation-delay: 0.2s;">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <i data-lucide="sparkles" class="me-3" style="width: 24px; height: 24px; color: var(--accent-yellow);"></i>
+                    <h3 class="card-title mb-0">Preset Intelligenti</h3>
+                </div>
+                <p class="text-secondary small mb-4">Scegli un template predefinito o personalizza il tuo prompt</p>
+                
+                <!-- Mood Presets -->
+                <div class="mb-4">
+                    <h6 class="text-uppercase fw-bold mb-3" style="color: var(--accent-blue); font-size: 0.75rem; letter-spacing: 1px;">🎵 MOOD</h6>
+                    <div class="preset-category">
+                        <div class="ai-preset-card" data-preset="energia" data-category="mood">
+                            <div class="preset-icon">
+                                <i data-lucide="zap" style="width: 24px; height: 24px;"></i>
+                            </div>
+                            <h6 class="fw-bold mb-2">Energia & Workout</h6>
+                            <p class="text-secondary small mb-0">Brani energici per sport e attività</p>
+                        </div>
+                        
+                        <div class="ai-preset-card" data-preset="relax" data-category="mood">
+                            <div class="preset-icon">
+                                <i data-lucide="moon" style="width: 24px; height: 24px;"></i>
+                            </div>
+                            <h6 class="fw-bold mb-2">Relax & Chill</h6>
+                            <p class="text-secondary small mb-0">Musica rilassante per meditazione</p>
+                        </div>
+                        
+                        <div class="ai-preset-card" data-preset="party" data-category="mood">
+                            <div class="preset-icon">
+                                <i data-lucide="party-popper" style="width: 24px; height: 24px;"></i>
+                            </div>
+                            <h6 class="fw-bold mb-2">Party & Festa</h6>
+                            <p class="text-secondary small mb-0">Hit dancefloor per feste</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Genre Presets -->
+                <div class="mb-4">
+                    <h6 class="text-uppercase fw-bold mb-3" style="color: var(--accent-purple); font-size: 0.75rem; letter-spacing: 1px;">🎸 GENERI</h6>
+                    <div class="preset-category">
+                        <div class="ai-preset-card" data-preset="rock-classics" data-category="genre">
+                            <div class="preset-icon">
+                                <i data-lucide="guitar" style="width: 24px; height: 24px;"></i>
+                            </div>
+                            <h6 class="fw-bold mb-2">Rock Classico</h6>
+                            <p class="text-secondary small mb-0">I grandi classici del rock</p>
+                        </div>
+                        
+                        <div class="ai-preset-card" data-preset="italian-music" data-category="genre">
+                            <div class="preset-icon">
+                                <i data-lucide="heart" style="width: 24px; height: 24px;"></i>
+                            </div>
+                            <h6 class="fw-bold mb-2">Musica Italiana</h6>
+                            <p class="text-secondary small mb-0">Il meglio della canzone italiana</p>
+                        </div>
+                        
+                        <div class="ai-preset-card" data-preset="electronic" data-category="genre">
+                            <div class="preset-icon">
+                                <i data-lucide="radio" style="width: 24px; height: 24px;"></i>
+                            </div>
+                            <h6 class="fw-bold mb-2">Electronic & EDM</h6>
+                            <p class="text-secondary small mb-0">Musica elettronica e dance</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Era Presets -->
+                <div class="mb-3">
+                    <h6 class="text-uppercase fw-bold mb-3" style="color: var(--accent-red); font-size: 0.75rem; letter-spacing: 1px;">📅 EPOCHE</h6>
+                    <div class="preset-category">
+                        <div class="ai-preset-card" data-preset="80s-90s" data-category="era">
+                            <div class="preset-icon">
+                                <i data-lucide="rewind" style="width: 24px; height: 24px;"></i>
+                            </div>
+                            <h6 class="fw-bold mb-2">Anni '80 - '90</h6>
+                            <p class="text-secondary small mb-0">Nostalgia musicale</p>
+                        </div>
+                        
+                        <div class="ai-preset-card" data-preset="2000s" data-category="era">
+                            <div class="preset-icon">
+                                <i data-lucide="cd" style="width: 24px; height: 24px;"></i>
+                            </div>
+                            <h6 class="fw-bold mb-2">Anni 2000</h6>
+                            <p class="text-secondary small mb-0">I hits del nuovo millennio</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Chat Interface & Prompt Builder -->
+    <div class="col-lg-5 mb-4">
+        <div class="card h-100 animate-slide-up" style="animation-delay: 0.3s;">
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex align-items-center mb-3">
+                    <i data-lucide="message-circle" class="me-3" style="width: 24px; height: 24px; color: var(--spotify-green);"></i>
+                    <h3 class="card-title mb-0">Generatore AI</h3>
+                </div>
+                
+                <!-- Chat History -->
+                <div class="chat-container flex-grow-1 mb-3" id="chatContainer">
+                    <div class="chat-message assistant">
+                        <div class="d-flex align-items-center mb-2">
+                            <i data-lucide="bot" class="me-2" style="width: 16px; height: 16px;"></i>
+                            <strong>AI Assistant</strong>
+                        </div>
+                        <p class="mb-0">Ciao! Sono qui per aiutarti a creare playlist personalizzate. Puoi scegliere un preset o descrivimi esattamente cosa cerchi.</p>
+                        <div class="timestamp">Ora</div>
+                    </div>
+                </div>
+                
+                <!-- Suggestion Pills -->
+                <div class="mb-3" id="suggestionPills" style="display: none;">
+                    <small class="text-secondary d-block mb-2">💡 Prova queste idee:</small>
+                    <div class="suggestions-container"></div>
+                </div>
+                
+                <!-- Prompt Input -->
+                <form action="{{ url_for('ai_lab', user=selected_user) }}" method="post" id="promptForm">
+                    <div class="prompt-input-container mb-3">
+                        <textarea id="custom_prompt" name="custom_prompt" rows="3" class="form-control" 
+                                  placeholder="Descrivi la playlist che desideri... (es: playlist energica per correre con rock anni 90)"
+                                  style="resize: none;"></textarea>
+                        <div class="prompt-suggestions" id="promptSuggestions"></div>
+                    </div>
+                    
+                    <!-- Quick Modifiers -->
+                    <div class="mb-3">
+                        <small class="text-secondary d-block mb-2">🎛️ Personalizza:</small>
+                        <div class="d-flex flex-wrap gap-1" id="modifierPills">
+                            <span class="suggestion-pill" data-modifier="20 brani">20 brani</span>
+                            <span class="suggestion-pill" data-modifier="30 brani">30 brani</span>
+                            <span class="suggestion-pill" data-modifier="1 ora">1 ora</span>
+                            <span class="suggestion-pill" data-modifier="solo hit">solo hit</span>
+                            <span class="suggestion-pill" data-modifier="brani famosi">brani famosi</span>
+                            <span class="suggestion-pill" data-modifier="underground">underground</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Charts Integration Option -->
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="include_charts" name="include_charts" checked>
+                            <label class="form-check-label" for="include_charts">
+                                <i data-lucide="trending-up" class="me-1" style="width: 16px; height: 16px; color: var(--spotify-green);"></i>
+                                <strong>Includi classifiche aggiornate</strong>
+                            </label>
+                        </div>
+                        <small class="text-muted">Gemini userà dati di Billboard, Spotify e classifiche italiane per suggerimenti attuali</small>
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-info" id="previewChartsBtn">
+                                <i data-lucide="eye" style="width: 14px; height: 14px;"></i>
+                                Anteprima Classifiche
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-success" id="testChartsBtn">
+                                <i data-lucide="check-circle" style="width: 14px; height: 14px;"></i>
+                                Test Integrazione
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Indicator -->
+                    <div id="progressContainer" class="mb-3" style="display: none;">
+                        <div class="alert alert-info">
+                            <div class="d-flex align-items-center">
+                                <div class="spinner-border spinner-border-sm me-3" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <div>
+                                    <div class="fw-bold" id="progressTitle">Generazione in corso...</div>
+                                    <small id="progressMessage">Avvio processo AI...</small>
+                                </div>
+                            </div>
+                            <div class="progress mt-2" style="height: 6px;">
+                                <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-center" id="generateBtn">
+                        <i data-lucide="sparkles" class="me-2" style="width: 18px; height: 18px;"></i>
+                        Genera Playlist con AI
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Existing Playlists -->
+    <div class="col-lg-3 mb-4">
+        <div class="card h-100 animate-slide-up" style="animation-delay: 0.4s;">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="d-flex align-items-center">
+                        <i data-lucide="list-music" class="me-3" style="width: 24px; height: 24px; color: var(--accent-blue);"></i>
+                        <h3 class="card-title mb-0">Playlist Create</h3>
+                    </div>
+                    <span class="badge bg-info">{{ existing_playlists|length }}</span>
+                </div>
+                
+                {% if existing_playlists %}
+                    <div class="playlist-timeline">
+                        {% for playlist in existing_playlists %}
+                        <div class="timeline-item">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="flex-grow-1 me-2">
+                                    <h6 class="fw-bold mb-1">{{ playlist.title }}</h6>
+                                    {% if playlist.description %}
+                                    <p class="text-secondary small mb-1">"{{ playlist.description[:50] }}{% if playlist.description|length > 50 %}...{% endif %}"</p>
+                                    {% endif %}
+                                    <div class="d-flex align-items-center text-muted">
+                                        <i data-lucide="music" style="width: 12px; height: 12px;" class="me-1"></i>
+                                        <small>{{ playlist.item_count }} tracce</small>
+                                        <span class="mx-1">•</span>
+                                        <small>{{ playlist.created_at_formatted }}</small>
+                                    </div>
+                                </div>
+                                <form action="{{ url_for('delete_ai_playlist_route', playlist_db_id=playlist.id) }}" 
+                                      method="post" 
+                                      onsubmit="return confirm('Sei sicuro di voler eliminare questa playlist?');"
+                                      class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Elimina playlist">
+                                        <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i data-lucide="music" style="width: 48px; height: 48px; color: var(--text-muted);" class="mb-3"></i>
+                        <p class="text-secondary">Nessuna playlist AI ancora creata per questo utente.</p>
+                        <small class="text-muted">Le playlist generate appariranno qui!</small>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    let selectedPreset = null;
+    let activeSuggestions = [];
+    
+    // Preset data with enhanced prompts
+    const presetPrompts = {
+        'energia': 'Crea una playlist energica di 25 brani perfetta per allenarsi in palestra. Include rock alternativo, pop energico e electronic dance music. Privilegia brani con un ritmo veloce (130+ BPM) e testi motivazionali.',
+        'relax': 'Genera una playlist rilassante di 20 brani per meditazione e relax. Include ambient, acoustic, indie folk e musica strumentale. Scegli brani con atmosfere calmanti e melodie dolci.',
+        'party': 'Crea una playlist da festa di 30 brani con i migliori hit dancefloor. Include pop dance, house music, reggaeton e tormentoni italiani. Perfetta per far ballare tutti!',
+        'rock-classics': 'Genera una playlist con 25 classici del rock di tutti i tempi. Include Led Zeppelin, Queen, AC/DC, Pink Floyd, Deep Purple e altre leggende del rock. Solo grandi successi!',
+        'italian-music': 'Crea una playlist con 25 brani del meglio della musica italiana. Include cantautori, pop italiano, rock italiano e grandi classici da Battisti a Vasco Rossi.',
+        'electronic': 'Genera una playlist elettronica di 20 brani con house, techno, progressive e EDM. Include sia classici che brani moderni del panorama electronic.',
+        '80s-90s': 'Crea una playlist nostalgica con 30 hit degli anni \'80 e \'90. Include new wave, synth-pop, eurodance e i grandi successi di queste due decadi.',
+        '2000s': 'Genera una playlist con 25 hit degli anni 2000. Include pop rock, alternative rock, RnB e tutti i successi che hanno definito il nuovo millennio.'
+    };
+    
+    // Intelligent suggestions based on context
+    const contextualSuggestions = {
+        workout: ['brani ad alto BPM', 'rock energico', 'electronic dance', 'rap motivazionale'],
+        mood: ['atmosfera rilassante', 'brani emotivi', 'musica positiva', 'sonorità chill'],
+        party: ['hit da discoteca', 'musica ballabile', 'tormentoni estate', 'reggaeton hits'],
+        discovery: ['brani poco conosciuti', 'artisti emergenti', 'hidden gems', 'deep cuts'],
+        classics: ['grandi successi', 'evergreen', 'classici intramontabili', 'greatest hits']
+    };
+    
+    // Initialize
+    setupPresetHandlers();
+    setupPromptAutocomplete();
+    setupModifierPills();
+    setupChartsIntegration();
+    
+    function setupPresetHandlers() {
+        $('.ai-preset-card').on('click', function() {
+            const preset = $(this).data('preset');
+            const category = $(this).data('category');
+            
+            // Visual feedback
+            $('.ai-preset-card').removeClass('selected');
+            $(this).addClass('selected');
+            
+            selectedPreset = preset;
+            
+            // Update prompt
+            const promptText = presetPrompts[preset];
+            $('#custom_prompt').val(promptText);
+            
+            // Add to chat
+            addChatMessage('user', `Ho selezionato il preset: ${$(this).find('h6').text()}`);
+            addChatMessage('assistant', `Perfetto! Ho preparato un prompt ottimizzato per ${$(this).find('h6').text().toLowerCase()}. Puoi modificarlo o generare direttamente la playlist.`);
+            
+            // Show contextual suggestions
+            showContextualSuggestions(category, preset);
+            
+            // Scroll to prompt
+            $('html, body').animate({
+                scrollTop: $('#custom_prompt').offset().top - 100
+            }, 500);
+        });
+    }
+    
+    function setupPromptAutocomplete() {
+        const commonPrompts = [
+            'playlist per allenarsi con rock energico',
+            'musica rilassante per studiare',
+            'hit italiane per cantare in auto',
+            'brani romantici per cena',
+            'musica da festa anni 90',
+            'colonna sonora per lavorare',
+            'classici rock per viaggio',
+            'electronic music per concentrarsi'
+        ];
+        
+        $('#custom_prompt').on('input', function() {
+            const input = $(this).val().toLowerCase();
+            const suggestions = commonPrompts.filter(prompt => 
+                prompt.toLowerCase().includes(input) && input.length > 2
+            );
+            
+            if (suggestions.length > 0 && input.length > 2) {
+                showPromptSuggestions(suggestions);
+            } else {
+                hidePromptSuggestions();
+            }
+        });
+        
+        // Hide suggestions when clicking outside
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.prompt-input-container').length) {
+                hidePromptSuggestions();
+            }
+        });
+    }
+    
+    function showPromptSuggestions(suggestions) {
+        const container = $('#promptSuggestions');
+        container.empty();
+        
+        suggestions.forEach(suggestion => {
+            const item = $(`<div class="suggestion-item">${suggestion}</div>`);
+            item.on('click', function() {
+                $('#custom_prompt').val(suggestion);
+                hidePromptSuggestions();
+                addChatMessage('user', suggestion);
+                addChatMessage('assistant', 'Ottima scelta! Questa playlist sarà perfetta per le tue esigenze.');
+            });
+            container.append(item);
+        });
+        
+        container.show();
+    }
+    
+    function hidePromptSuggestions() {
+        $('#promptSuggestions').hide();
+    }
+    
+    function setupModifierPills() {
+        $('#modifierPills .suggestion-pill').on('click', function() {
+            $(this).toggleClass('active');
+            
+            // Add modifier to prompt
+            const modifier = $(this).data('modifier');
+            const currentPrompt = $('#custom_prompt').val();
+            
+            if ($(this).hasClass('active')) {
+                if (!currentPrompt.includes(modifier)) {
+                    const newPrompt = currentPrompt + (currentPrompt ? ', ' : '') + modifier;
+                    $('#custom_prompt').val(newPrompt);
+                }
+            } else {
+                const newPrompt = currentPrompt.replace(new RegExp(',?\\s*' + modifier, 'g'), '');
+                $('#custom_prompt').val(newPrompt);
+            }
+        });
+    }
+    
+    function showContextualSuggestions(category, preset) {
+        const suggestions = getContextualSuggestions(category, preset);
+        if (suggestions.length > 0) {
+            const container = $('#suggestionPills .suggestions-container');
+            container.empty();
+            
+            suggestions.forEach(suggestion => {
+                const pill = $(`<span class="suggestion-pill">${suggestion}</span>`);
+                pill.on('click', function() {
+                    const currentPrompt = $('#custom_prompt').val();
+                    const newPrompt = currentPrompt + ', ' + suggestion;
+                    $('#custom_prompt').val(newPrompt);
+                    $(this).addClass('active');
+                });
+                container.append(pill);
+            });
+            
+            $('#suggestionPills').show();
+        }
+    }
+    
+    function getContextualSuggestions(category, preset) {
+        switch(category) {
+            case 'mood':
+                if (preset === 'energia') return contextualSuggestions.workout;
+                if (preset === 'relax') return contextualSuggestions.mood;
+                if (preset === 'party') return contextualSuggestions.party;
+                break;
+            case 'genre':
+                return contextualSuggestions.discovery;
+            case 'era':
+                return contextualSuggestions.classics;
+        }
+        return [];
+    }
+    
+    function addChatMessage(sender, message) {
+        const timestamp = new Date().toLocaleTimeString('it-IT', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+        
+        const messageHtml = sender === 'user' ? 
+            `<div class="chat-message user">
+                <div>${message}</div>
+                <div class="timestamp">${timestamp}</div>
+             </div>` :
+            `<div class="chat-message assistant">
+                <div class="d-flex align-items-center mb-2">
+                    <i data-lucide="bot" class="me-2" style="width: 16px; height: 16px;"></i>
+                    <strong>AI Assistant</strong>
+                </div>
+                <div>${message}</div>
+                <div class="timestamp">${timestamp}</div>
+             </div>`;
+        
+        $('#chatContainer').append(messageHtml);
+        
+        // Refresh icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+        
+        // Scroll to bottom
+        const chatContainer = document.getElementById('chatContainer');
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+    
+    // Form submission enhancement with progress tracking
+    $('#promptForm').on('submit', function(e) {
+        const prompt = $('#custom_prompt').val().trim();
+        if (prompt) {
+            addChatMessage('user', prompt);
+            addChatMessage('assistant', '🎵 Perfetto! Sto generando la tua playlist personalizzata. Monitorerò il progresso...');
+            
+            // Show progress and disable button
+            showProgress();
+            startProgressMonitoring();
+        }
+    });
+    
+    function showProgress() {
+        $('#progressContainer').show();
+        $('#generateBtn').prop('disabled', true);
+        $('#generateBtn').html('<div class="spinner-border spinner-border-sm me-2"></div>Generazione in corso...');
+    }
+    
+    function hideProgress() {
+        $('#progressContainer').hide();
+        $('#generateBtn').prop('disabled', false);
+        $('#generateBtn').html('<i data-lucide="sparkles" class="me-2" style="width: 18px; height: 18px;"></i>Genera Playlist con AI');
+        lucide.createIcons();
+    }
+    
+    function updateProgress(step, message, percentage) {
+        $('#progressTitle').text(step);
+        $('#progressMessage').text(message);
+        $('#progressBar').css('width', percentage + '%');
+    }
+    
+    function startProgressMonitoring() {
+        const steps = [
+            { step: "Connessione AI...", message: "Invio richiesta a Gemini", percent: 5, duration: 8000 },
+            { step: "Generazione playlist...", message: "AI sta creando la selezione", percent: 15, duration: 12000 },
+            { step: "Ricerca tracce...", message: "Verifica disponibilità nella libreria", percent: 25, duration: 15000 },
+            { step: "Download mancanti...", message: "Scaricamento brani non presenti", percent: 60, duration: 120000 }, // 2 minuti
+            { step: "Attesa scansione Plex...", message: "Plex sta indicizzando i nuovi file", percent: 75, duration: 300000 }, // 5 minuti
+            { step: "Aggiornamento playlist...", message: "Verifica tracce e aggiornamento automatico", percent: 90, duration: 30000 },
+            { step: "Completamento...", message: "Processo completato con successo", percent: 100, duration: 5000 }
+        ];
+        
+        let currentStep = 0;
+        
+        function processNextStep() {
+            if (currentStep < steps.length) {
+                const step = steps[currentStep];
+                updateProgress(step.step, step.message, step.percent);
+                
+                // Aggiungi messaggio specifico per l'attesa
+                if (currentStep === 4) { // Attesa scansione Plex
+                    addChatMessage('assistant', '⏳ Attendo 5 minuti per dare a Plex il tempo di scansionare i nuovi file scaricati...');
+                }
+                
+                currentStep++;
+                
+                if (currentStep === steps.length) {
+                    setTimeout(() => {
+                        checkForNewPlaylist();
+                        hideProgress();
+                        addChatMessage('assistant', '✅ Playlist creata e aggiornata con successo! Controlla i brani che erano mancanti - dovrebbero ora essere presenti nella playlist.');
+                    }, step.duration);
+                } else {
+                    setTimeout(processNextStep, step.duration);
+                }
+            }
+        }
+        
+        processNextStep();
+    }
+    
+    function checkForNewPlaylist() {
+        // Show badge in navbar for new playlist
+        if (typeof window.showNewPlaylistBadge === 'function') {
+            window.showNewPlaylistBadge();
+        }
+        
+        setTimeout(() => {
+            location.reload(); // Refresh to show new playlist in sidebar
+        }, 1000);
+    }
+    
+    function setupChartsIntegration() {
+        // Preview Charts button
+        $('#previewChartsBtn').on('click', function() {
+            $(this).prop('disabled', true).html('<div class="spinner-border spinner-border-sm me-1"></div>Caricamento...');
+            
+            // Add immediate feedback
+            addChatMessage('user', 'Richiesta anteprima classifiche');
+            addChatMessage('assistant', '🔄 Caricamento dati musicali in corso...');
+            
+            $.get('/api/music_charts_preview')
+                .done(function(data) {
+                    console.log('Charts data received:', data);
+                    showChartsPreview(data);
+                })
+                .fail(function(xhr, status, error) {
+                    console.error('Charts API error:', xhr, status, error);
+                    addChatMessage('assistant', '❌ Errore nel caricamento anteprima classifiche: ' + error);
+                })
+                .always(function() {
+                    $('#previewChartsBtn').prop('disabled', false).html('<i data-lucide="eye" style="width: 14px; height: 14px;"></i> Anteprima Classifiche');
+                    lucide.createIcons();
+                });
+        });
+        
+        // Test Charts Integration button
+        $('#testChartsBtn').on('click', function() {
+            $(this).prop('disabled', true).html('<div class="spinner-border spinner-border-sm me-1"></div>Testing...');
+            
+            $.get('/api/test_music_charts')
+                .done(function(data) {
+                    const message = data.success ? 
+                        '✅ Test completato con successo! Tutte le fonti di classifiche sono funzionanti.' :
+                        '❌ Test fallito. Verificare la configurazione delle classifiche.';
+                    addChatMessage('assistant', message);
+                })
+                .fail(function() {
+                    addChatMessage('assistant', '❌ Errore durante il test delle classifiche.');
+                })
+                .always(function() {
+                    $('#testChartsBtn').prop('disabled', false).html('<i data-lucide="check-circle" style="width: 14px; height: 14px;"></i> Test Integrazione');
+                    lucide.createIcons();
+                });
+        });
+    }
+    
+    function showChartsPreview(data) {
+        if (data.error) {
+            addChatMessage('assistant', '❌ Errore nel caricamento dati classifiche: ' + data.error);
+            return;
+        }
+        
+        let message = '📊 ANTEPRIMA CLASSIFICHE DISPONIBILI:\n\n';
+        
+        // Charts
+        if (data.charts_available && data.charts_available.length > 0) {
+            message += 'CLASSIFICHE PRINCIPALI:\n';
+            data.charts_available.forEach(chart => {
+                message += `• ${chart.name}: ${chart.count} tracce\n`;
+                if (chart.top_3) {
+                    chart.top_3.forEach((track, i) => {
+                        message += `  ${i+1}. ${track.artist} - ${track.title}\n`;
+                    });
+                }
+                message += '\n';
+            });
+        }
+        
+        // Trends
+        if (data.trends_available && data.trends_available.length > 0) {
+            message += 'TENDENZE MUSICALI:\n';
+            data.trends_available.forEach(trend => {
+                message += `• ${trend.name}: ${trend.count} brani\n`;
+            });
+            message += '\n';
+        }
+        
+        // News
+        if (data.news_count > 0) {
+            message += `NOTIZIE MUSICALI: ${data.news_count} articoli disponibili\n\n`;
+        }
+        
+        message += `Ultimo aggiornamento: ${new Date(data.timestamp).toLocaleString('it-IT')}`;
+        
+        addChatMessage('assistant', message);
+    }
+    
+    // Initialize icons
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+});
+</script>
+{% endblock %}

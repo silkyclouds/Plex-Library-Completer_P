@@ -1,0 +1,19 @@
+version: "3.9"
+services:
+  completer:
+    build: .
+    container_name: plex-library-completer
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./Missing_data:/app/Missing_data
+      - ./Deezer_Links_Output:/app/Deezer_Links_Output
+      - ./state_data:/app/state_data
+      - ./templates:/app/templates
+      - ./plex_playlist_sync:/app/plex_playlist_sync
+      - ./app.py:/app/app.py
+      - M:\Organizzata:/music
+      - ./config.toml:/root/.config/streamrip/config.toml
+    env_file:
+      - .env
+    restart: on-failure

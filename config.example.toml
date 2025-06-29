@@ -1,0 +1,104 @@
+[downloads]
+# Cartella dove i brani vengono scaricati (dentro al container)
+folder = "/music"
+# Mettiamo le opzioni che ci aveva chiesto prima
+source_subdirectories = false
+disc_subdirectories = true
+concurrency = true
+max_connections = 6
+requests_per_minute = 60
+verify_ssl = true
+
+# SEZIONE RICHIESTA DALL'ULTIMO ERRORE
+[qobuz]
+quality = 3
+download_booklets = true
+use_auth_token = false
+email_or_userid = ""
+password_or_token = ""
+app_id = ""
+secrets = []
+
+# Le altre sezioni che probabilmente chiederà dopo
+[tidal]
+quality = 3
+download_videos = true
+user_id = ""
+country_code = ""
+access_token = ""
+refresh_token = ""
+token_expiry = ""
+
+[deezer]
+quality = 1
+# Inserisci qui il tuo ARL valido
+arl = "yourDeezerARL"
+use_deezloader = true
+deezloader_warnings = true
+
+[soundcloud]
+quality = 0
+client_id = ""
+app_version = ""
+
+[youtube]
+quality = 0
+download_videos = false
+video_downloads_folder = ""
+
+[database]
+downloads_enabled = true
+downloads_path = "/app/state/downloads.db"
+failed_downloads_enabled = true
+failed_downloads_path = "/app/state/failed_downloads.db"
+
+[conversion]
+enabled = false
+codec = "ALAC"
+sampling_rate = 48000
+bit_depth = 24
+lossy_bitrate = 320
+
+[qobuz_filters]
+extras = false
+repeats = false
+non_albums = false
+features = false
+non_studio_albums = false
+non_remaster = false
+
+[artwork]
+embed = true
+embed_size = "large"
+embed_max_width = -1
+save_artwork = true
+saved_max_width = -1
+
+[metadata]
+set_playlist_to_album = true
+renumber_playlist_tracks = true
+exclude = []
+
+[filepaths]
+# Template per creare le cartelle Artista/Album
+folder_format = "{albumartist}/{title}"  # <-- USA {title} PER IL NOME DELL'ALBUM
+# Template per il nome del file
+track_format = "{tracknumber:02d} - {title}"
+restrict_characters = false
+truncate_to = 120
+add_singles_to_folder = false
+
+
+[lastfm]
+source = "qobuz"
+fallback_source = ""
+
+[cli]
+text_output = true
+progress_bars = true
+max_search_results = 100
+
+[misc]
+# Sezione che ci aveva chiesto in uno degli errori precedenti
+version = "2.0.6"
+check_for_updates = true

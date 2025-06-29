@@ -1,0 +1,959 @@
+{% extends "base.html" %}
+{% block title %}Tracce Mancanti{% endblock %}
+
+{% block extra_style %}
+.track-row {
+    transition: all var(--transition-fast);
+    border-radius: var(--radius-md);
+    margin-bottom: 0.5rem;
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+.track-row:hover {
+    background: var(--bg-hover);
+    transform: translateX(4px);
+    border-color: rgba(255,255,255,0.1);
+}
+
+.track-row.selected {
+    border-color: var(--spotify-green);
+    background: rgba(29, 185, 84, 0.08);
+}
+
+.track-artwork {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-sm);
+    background: var(--gradient-card);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.track-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.track-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.track-artist {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.track-album {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.status-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+}
+
+.action-buttons {
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+}
+
+.track-row:hover .action-buttons {
+    opacity: 1;
+}
+
+.filter-section {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.search-input {
+    background: var(--bg-tertiary);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    padding: 0.75rem 1rem 0.75rem 3rem;
+    width: 100%;
+    transition: all var(--transition-fast);
+}
+
+.search-input:focus {
+    background: var(--bg-hover);
+    border-color: var(--spotify-green);
+    box-shadow: 0 0 0 0.2rem rgba(29, 185, 84, 0.25);
+    color: var(--text-primary);
+}
+
+.stats-bar {
+    background: var(--gradient-card);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+{% endblock %}
+
+{% block content %}
+<!-- Header Section -->
+<div class="d-flex align-items-center mb-4 animate-slide-up">
+    <div class="me-4">
+        <div style="width: 80px; height: 80px; background: var(--gradient-primary); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
+            <i data-lucide="search" style="width: 40px; height: 40px; color: #000;"></i>
+        </div>
+    </div>
+    <div>
+        <h1 class="mb-2" style="font-size: 2.5rem; font-weight: 700;">Tracce Mancanti</h1>
+        <p class="text-secondary mb-0" id="tracks-subtitle">Trova e gestisci le tracce non presenti nella tua libreria</p>
+    </div>
+</div>
+
+<!-- Stats Bar -->
+<div class="stats-bar animate-slide-up" style="animation-delay: 0.1s;">
+    <div class="row text-center">
+        <div class="col-md-3">
+            <div class="d-flex align-items-center justify-content-center">
+                <i data-lucide="music" class="me-2" style="width: 20px; height: 20px; color: var(--accent-red);"></i>
+                <div>
+                    <div class="fs-5 fw-bold" id="total-missing">{{ tracks|length }}</div>
+                    <small class="text-secondary">Totali</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="d-flex align-items-center justify-content-center">
+                <i data-lucide="download" class="me-2" style="width: 20px; height: 20px; color: var(--accent-blue);"></i>
+                <div>
+                    <div class="fs-5 fw-bold" id="downloading-count">0</div>
+                    <small class="text-secondary">In Download</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="d-flex align-items-center justify-content-center">
+                <i data-lucide="check-circle" class="me-2" style="width: 20px; height: 20px; color: var(--spotify-green);"></i>
+                <div>
+                    <div class="fs-5 fw-bold" id="resolved-count">0</div>
+                    <small class="text-secondary">Risolte</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="d-flex align-items-center justify-content-center">
+                <i data-lucide="clock" class="me-2" style="width: 20px; height: 20px; color: var(--accent-yellow);"></i>
+                <div>
+                    <div class="fs-5 fw-bold" id="pending-count">{{ tracks|length }}</div>
+                    <small class="text-secondary">In Attesa</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Controls Section -->
+<div class="filter-section animate-slide-up" style="animation-delay: 0.2s;">
+    <div class="row align-items-center">
+        <div class="col-md-6">
+            <div class="position-relative">
+                <i data-lucide="search" class="position-absolute" style="left: 1rem; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--text-secondary);"></i>
+                <input type="text" class="search-input" id="searchInput" placeholder="Cerca tracce per titolo, artista o album...">
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="d-flex gap-2 justify-content-end flex-wrap">
+                <button class="btn btn-primary d-flex align-items-center" id="selectAllBtn">
+                    <i data-lucide="check-square" class="me-2" style="width: 16px; height: 16px;"></i>
+                    Seleziona Tutto
+                </button>
+                <button class="btn btn-success d-flex align-items-center" id="downloadSelectedBtn">
+                    <i data-lucide="download" class="me-2" style="width: 16px; height: 16px;"></i>
+                    Scarica Selezionate
+                </button>
+                <div class="btn-group">
+                    <button class="btn btn-secondary dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown">
+                        <i data-lucide="more-horizontal" class="me-2" style="width: 16px; height: 16px;"></i>
+                        Azioni
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <form action="{{ url_for('rescan_missing_route') }}" method="POST" class="d-inline">
+                                <button type="submit" class="dropdown-item d-flex align-items-center">
+                                    <i data-lucide="refresh-cw" class="me-2" style="width: 16px; height: 16px;"></i>
+                                    Scansiona Libreria
+                                </button>
+                            </form>
+                        </li>
+                        <li>
+                            <form action="{{ url_for('force_playlist_scan_route') }}" method="POST" class="d-inline">
+                                <button type="submit" class="dropdown-item d-flex align-items-center">
+                                    <i data-lucide="scan" class="me-2" style="width: 16px; height: 16px;"></i>
+                                    Forza Scan Playlist
+                                </button>
+                            </form>
+                        </li>
+                        <li>
+                            <form action="{{ url_for('comprehensive_verify_missing_route') }}" method="POST" class="d-inline">
+                                <button type="submit" class="dropdown-item d-flex align-items-center">
+                                    <i data-lucide="shield-check" class="me-2" style="width: 16px; height: 16px;"></i>
+                                    Verifica Completa (Fuzzy + Filesystem)
+                                </button>
+                            </form>
+                        </li>
+                        <li>
+                            <form action="{{ url_for('test_matching_improvements_route') }}" method="POST" class="d-inline">
+                                <button type="submit" class="dropdown-item d-flex align-items-center">
+                                    <i data-lucide="test-tube" class="me-2" style="width: 16px; height: 16px;"></i>
+                                    Test Matching Intelligente
+                                </button>
+                            </form>
+                        </li>
+                        <li>
+                            <form action="{{ url_for('clean_tv_content_route') }}" method="POST" class="d-inline">
+                                <button type="submit" class="dropdown-item d-flex align-items-center">
+                                    <i data-lucide="filter-x" class="me-2" style="width: 16px; height: 16px;"></i>
+                                    Pulisci Falsi Positivi (TV + NO_DELETE)
+                                </button>
+                            </form>
+                        </li>
+                        <li>
+                            <form action="{{ url_for('clean_resolved_tracks_route') }}" method="POST" class="d-inline">
+                                <button type="submit" class="dropdown-item d-flex align-items-center">
+                                    <i data-lucide="check-circle" class="me-2" style="width: 16px; height: 16px;"></i>
+                                    Pulisci Tracce Risolte
+                                </button>
+                            </form>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form action="{{ url_for('find_and_download_missing_tracks_auto') }}" method="POST" class="d-inline">
+                                <button type="submit" class="dropdown-item d-flex align-items-center">
+                                    <i data-lucide="zap" class="me-2" style="width: 16px; height: 16px;"></i>
+                                    Auto-Download Tutto
+                                </button>
+                            </form>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form action="{{ url_for('delete_all_missing_tracks_route') }}" method="POST" onsubmit="return confirm('Sei sicuro di voler eliminare tutte le tracce mancanti?');" class="d-inline">
+                                <button type="submit" class="dropdown-item text-danger d-flex align-items-center">
+                                    <i data-lucide="trash-2" class="me-2" style="width: 16px; height: 16px;"></i>
+                                    Elimina Tutto
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tracks List - Spotify Style -->
+<div class="animate-slide-up" style="animation-delay: 0.3s;">
+    {% if tracks %}
+        <div id="tracks-container">
+            {% for track in tracks %}
+            <div class="track-row p-3 d-flex align-items-center" data-track-id="{{ track[0] }}" data-title="{{ track[1]|e }}" data-artist="{{ track[2]|e }}" data-album="{{ track[3]|e }}" data-status="{{ track[6] }}">
+                <!-- Checkbox -->
+                <div class="me-3">
+                    <input type="checkbox" class="form-check-input track-checkbox" data-track-id="{{ track[0] }}" data-title="{{ track[1]|e }}" data-artist="{{ track[2]|e }}">
+                </div>
+                
+                <!-- Track Artwork Placeholder -->
+                <div class="track-artwork me-3">
+                    <i data-lucide="music" style="width: 24px; height: 24px; color: var(--text-secondary);"></i>
+                </div>
+                
+                <!-- Track Info -->
+                <div class="track-info me-3">
+                    <div class="track-title">{{ track[1] }}</div>
+                    <div class="track-artist">{{ track[2] }}</div>
+                    {% if track[3] %}
+                    <div class="track-album">{{ track[3] }}</div>
+                    {% endif %}
+                </div>
+                
+                <!-- Playlist Info -->
+                <div class="me-3" style="min-width: 120px;">
+                    <small class="text-secondary">Da playlist:</small>
+                    <div class="fw-medium" style="color: var(--text-primary); font-size: 0.85rem;">{{ track[4] }}</div>
+                </div>
+                
+                <!-- Status Badge -->
+                <div class="me-3">
+                    {% set status_class = 'success' if track[6] == 'resolved' else ('info' if track[6] == 'downloaded' else 'warning') %}
+                    {% set status_icon = 'check-circle' if track[6] == 'resolved' else ('download' if track[6] == 'downloaded' else 'clock') %}
+                    <span class="status-badge bg-{{ status_class }} d-flex align-items-center">
+                        <i data-lucide="{{ status_icon }}" style="width: 12px; height: 12px;" class="me-1"></i>
+                        {{ track[6] }}
+                    </span>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="action-buttons d-flex gap-2">
+                    <button class="btn btn-sm btn-primary manual-search-btn d-flex align-items-center" 
+                            data-track-id="{{ track[0] }}" 
+                            data-title="{{ track[1]|e }}" 
+                            data-artist="{{ track[2]|e }}"
+                            title="Ricerca manuale">
+                        <i data-lucide="search" style="width: 14px; height: 14px;"></i>
+                    </button>
+                    <button class="btn btn-sm btn-success auto-download-btn d-flex align-items-center" 
+                            data-track-id="{{ track[0] }}"
+                            title="Download automatico">
+                        <i data-lucide="download" style="width: 14px; height: 14px;"></i>
+                    </button>
+                    <form action="{{ url_for('delete_missing_track_route', track_id=track[0]) }}" method="POST" onsubmit="return confirm('Sei sicuro di voler eliminare questa traccia?');" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-danger d-flex align-items-center" title="Elimina">
+                            <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-5">
+            <div class="mb-4">
+                <i data-lucide="check-circle" style="width: 80px; height: 80px; color: var(--spotify-green);"></i>
+            </div>
+            <h3 class="mb-3">Nessuna traccia mancante!</h3>
+            <p class="text-secondary mb-4">Ottimo lavoro! Tutte le tracce sono presenti nella tua libreria.</p>
+            <button class="btn btn-primary d-flex align-items-center mx-auto" onclick="location.reload()">
+                <i data-lucide="refresh-cw" class="me-2" style="width: 16px; height: 16px;"></i>
+                Aggiorna Lista
+            </button>
+        </div>
+    {% endif %}
+</div>
+</div>
+
+<!-- Modal Ricerca Manuale - Design Moderno -->
+<div class="modal fade" id="manualSearchModal" tabindex="-1" aria-labelledby="manualSearchModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content" style="background: var(--bg-card); border: 1px solid rgba(255,255,255,0.1);">
+      <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+        <div class="d-flex align-items-center">
+          <i data-lucide="search" class="me-3" style="width: 24px; height: 24px; color: var(--spotify-green);"></i>
+          <div>
+            <h4 class="modal-title mb-1">Ricerca Manuale</h4>
+            <small class="text-secondary">Trova e associa tracce dalla tua libreria o scarica da Deezer</small>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      
+      <div class="modal-body p-4">
+        <!-- Track Info Header -->
+        <div class="d-flex align-items-center p-3 mb-4" style="background: var(--gradient-card); border-radius: var(--radius-md); border-left: 3px solid var(--spotify-green);">
+          <div class="me-3">
+            <div class="track-artwork">
+              <i data-lucide="music" style="width: 24px; height: 24px; color: var(--text-secondary);"></i>
+            </div>
+          </div>
+          <div>
+            <div class="fw-bold fs-5 text-primary" id="modalTrackTitle">Titolo Traccia</div>
+            <div class="text-secondary" id="modalTrackArtist">Artista</div>
+          </div>
+        </div>
+        <input type="hidden" id="modalMissingTrackId">
+        
+        <div class="row">
+          <!-- Plex Search Section -->
+          <div class="col-md-6">
+            <div class="card h-100" style="background: var(--bg-secondary);">
+              <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                  <i data-lucide="server" class="me-2" style="width: 20px; height: 20px; color: var(--accent-blue);"></i>
+                  <h6 class="mb-0">Libreria Plex</h6>
+                </div>
+                <p class="text-secondary small mb-3">Cerca tracce già presenti nella tua libreria Plex</p>
+                
+                <div class="input-group mb-3">
+                  <span class="input-group-text" style="background: var(--bg-tertiary); border-color: rgba(255,255,255,0.1);">
+                    <i data-lucide="search" style="width: 16px; height: 16px;"></i>
+                  </span>
+                  <input type="text" id="plexSearchQuery" class="form-control" placeholder="Cerca per titolo o artista...">
+                  <button class="btn btn-primary" id="plexSearchBtn">
+                    <i data-lucide="search" class="me-1" style="width: 16px; height: 16px;"></i>
+                    Cerca
+                  </button>
+                </div>
+                
+                <div id="plexResults" class="search-results"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Deezer Search Section -->
+          <div class="col-md-6">
+            <div class="card h-100" style="background: var(--bg-secondary);">
+              <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                  <i data-lucide="download-cloud" class="me-2" style="width: 20px; height: 20px; color: var(--spotify-green);"></i>
+                  <h6 class="mb-0">Download da Deezer</h6>
+                </div>
+                <p class="text-secondary small mb-3">Cerca e scarica album completi da Deezer</p>
+                
+                <button class="btn btn-success w-100 mb-3" id="deezerSearchBtn">
+                  <i data-lucide="zap" class="me-2" style="width: 16px; height: 16px;"></i>
+                  Cerca Album su Deezer
+                </button>
+                
+                <div id="deezerResults" class="search-results"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.1);">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i data-lucide="x" class="me-2" style="width: 16px; height: 16px;"></i>
+          Chiudi
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.search-results {
+  max-height: 300px;
+  overflow-y: auto;
+  border-radius: var(--radius-md);
+}
+
+.search-result-item {
+  background: var(--bg-tertiary);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  transition: all var(--transition-fast);
+}
+
+.search-result-item:hover {
+  background: var(--bg-hover);
+  transform: translateY(-1px);
+}
+
+.search-result-item:last-child {
+  margin-bottom: 0;
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    let missingTrackId, trackTitle, trackArtist;
+    let selectedTracks = new Set();
+
+    // Initialize page
+    updateStats();
+    setupEventHandlers();
+    
+    // Initialize icons
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+
+    function updateStats() {
+        const totalTracks = $('.track-row').length;
+        const downloadingTracks = $('.track-row[data-status="downloaded"]').length;
+        const resolvedTracks = $('.track-row[data-status="resolved"]').length;
+        const pendingTracks = totalTracks - downloadingTracks - resolvedTracks;
+
+        $('#total-missing').text(totalTracks);
+        $('#downloading-count').text(downloadingTracks);
+        $('#resolved-count').text(resolvedTracks);
+        $('#pending-count').text(pendingTracks);
+
+        // Update subtitle
+        if (totalTracks === 0) {
+            $('#tracks-subtitle').text('Nessuna traccia mancante nella tua libreria!');
+        } else {
+            $('#tracks-subtitle').text(`${totalTracks} tracce da trovare e scaricare`);
+        }
+    }
+
+    function setupEventHandlers() {
+        // Search functionality
+        $('#searchInput').on('input', function() {
+            const searchTerm = $(this).val().toLowerCase();
+            filterTracks(searchTerm);
+        });
+
+        // Select all functionality
+        $('#selectAllBtn').on('click', function() {
+            const allSelected = selectedTracks.size === $('.track-row:visible').length;
+            
+            if (allSelected) {
+                // Deselect all
+                selectedTracks.clear();
+                $('.track-checkbox').prop('checked', false);
+                $('.track-row').removeClass('selected');
+                $(this).html('<i data-lucide="check-square" class="me-2" style="width: 16px; height: 16px;"></i>Seleziona Tutto');
+            } else {
+                // Select all visible
+                $('.track-row:visible').each(function() {
+                    const trackId = $(this).data('track-id');
+                    selectedTracks.add(trackId);
+                    $(this).find('.track-checkbox').prop('checked', true);
+                    $(this).addClass('selected');
+                });
+                $(this).html('<i data-lucide="square" class="me-2" style="width: 16px; height: 16px;"></i>Deseleziona Tutto');
+            }
+            
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+            updateSelectionCount();
+        });
+
+        // Individual track selection
+        $('.track-checkbox').on('change', function() {
+            const trackId = $(this).data('track-id');
+            const trackRow = $(this).closest('.track-row');
+            
+            if ($(this).is(':checked')) {
+                selectedTracks.add(trackId);
+                trackRow.addClass('selected');
+            } else {
+                selectedTracks.delete(trackId);
+                trackRow.removeClass('selected');
+            }
+            
+            updateSelectionCount();
+        });
+
+        // Auto download single track
+        $('.auto-download-btn').on('click', function() {
+            const trackId = $(this).data('track-id');
+            const trackRow = $(this).closest('.track-row');
+            const trackTitle = trackRow.data('title');
+            const trackArtist = trackRow.data('artist');
+            
+            autoDownloadTrack(trackId, trackTitle, trackArtist, $(this));
+        });
+    }
+
+    function filterTracks(searchTerm) {
+        $('.track-row').each(function() {
+            const title = $(this).data('title').toLowerCase();
+            const artist = $(this).data('artist').toLowerCase();
+            const album = $(this).data('album').toLowerCase();
+            
+            const matches = title.includes(searchTerm) || 
+                           artist.includes(searchTerm) || 
+                           album.includes(searchTerm);
+            
+            if (matches) {
+                $(this).show().addClass('animate-fade-in');
+            } else {
+                $(this).hide();
+            }
+        });
+        
+        updateStats();
+    }
+
+    function updateSelectionCount() {
+        const count = selectedTracks.size;
+        const downloadBtn = $('#downloadSelectedBtn');
+        
+        if (count > 0) {
+            downloadBtn.html(`<i data-lucide="download" class="me-2" style="width: 16px; height: 16px;"></i>Scarica ${count} Selezionate`);
+            downloadBtn.removeClass('btn-success').addClass('btn-primary');
+        } else {
+            downloadBtn.html('<i data-lucide="download" class="me-2" style="width: 16px; height: 16px;"></i>Scarica Selezionate');
+            downloadBtn.removeClass('btn-primary').addClass('btn-success');
+        }
+        
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }
+
+    function autoDownloadTrack(trackId, title, artist, button) {
+        // Show loading state
+        const originalHtml = button.html();
+        button.html('<i data-lucide="loader" class="me-1" style="width: 14px; height: 14px;"></i>').prop('disabled', true);
+        
+        // Find Deezer link and download
+        const deezerSearchUrl = "{{ url_for('search_deezer_manual') }}";
+        $.get(`${deezerSearchUrl}?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`)
+            .done(function(data) {
+                if (data.length > 0) {
+                    const albumUrl = `https://www.deezer.com/album/${data[0].album.id}`;
+                    
+                    // Download the track
+                    $.ajax({
+                        url: '{{ url_for("download_track") }}',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({
+                            track_id: trackId,
+                            album_url: albumUrl
+                        }),
+                        success: function(response) {
+                            if (response.success) {
+                                showNotification('Download aggiunto alla coda!', 'success');
+                                // Update track status
+                                button.closest('.track-row').find('.status-badge')
+                                    .removeClass('bg-warning').addClass('bg-info')
+                                    .html('<i data-lucide="download" style="width: 12px; height: 12px;" class="me-1"></i>downloaded');
+                            } else {
+                                showNotification('Errore: ' + response.error, 'error');
+                            }
+                        },
+                        error: function() {
+                            showNotification('Errore di comunicazione con il server', 'error');
+                        },
+                        complete: function() {
+                            button.html(originalHtml).prop('disabled', false);
+                            if (typeof lucide !== 'undefined') {
+                                lucide.createIcons();
+                            }
+                        }
+                    });
+                } else {
+                    showNotification('Nessun risultato trovato su Deezer', 'warning');
+                    button.html(originalHtml).prop('disabled', false);
+                }
+            })
+            .fail(function() {
+                showNotification('Errore durante la ricerca', 'error');
+                button.html(originalHtml).prop('disabled', false);
+            });
+    }
+
+    function showNotification(message, type = 'info') {
+        const alertClass = type === 'success' ? 'alert-success' : 
+                          type === 'error' ? 'alert-danger' : 
+                          type === 'warning' ? 'alert-warning' : 'alert-info';
+        
+        const notification = $(`
+            <div class="alert ${alertClass} alert-dismissible fade show position-fixed" 
+                 style="top: 20px; right: 20px; z-index: 1050; min-width: 300px;">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `);
+        
+        $('body').append(notification);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            notification.alert('close');
+        }, 5000);
+    }
+
+    // Manual search modal functionality
+    $(document).on('click', '.manual-search-btn', function() {
+        missingTrackId = $(this).data('track-id');
+        trackTitle = $(this).data('title');
+        trackArtist = $(this).data('artist');
+
+        $('#modalMissingTrackId').val(missingTrackId);
+        $('#modalTrackTitle').text(trackTitle);
+        $('#modalTrackArtist').text(trackArtist);
+        $('#plexSearchQuery').val(trackTitle + ' ' + trackArtist);
+        
+        // Clear previous results
+        $('#plexResults').empty();
+        $('#deezerResults').empty();
+
+        $('#manualSearchModal').modal('show');
+    });
+
+    // Gestione Ricerca Plex
+    $('#plexSearchBtn').on('click', function() {
+        const query = $('#plexSearchQuery').val();
+        if (!query.trim()) {
+            showNotification('Inserisci un termine di ricerca', 'warning');
+            return;
+        }
+        
+        const button = $(this);
+        const originalHtml = button.html();
+        button.html('<i data-lucide="loader" class="me-1" style="width: 16px; height: 16px;"></i>Ricerca...').prop('disabled', true);
+        
+        $('#plexResults').html('<div class="text-center p-3"><i data-lucide="loader" class="me-2" style="width: 20px; height: 20px;"></i>Ricerca in corso...</div>');
+        
+        const userKey = 'main';
+        const plexSearchUrl = "{{ url_for('search_plex_manual') }}";
+        $.get(`${plexSearchUrl}?query=${encodeURIComponent(query)}&user=${userKey}`)
+            .done(function(data) {
+                $('#plexResults').empty();
+                if (data.length > 0) {
+                    data.forEach(function(track) {
+                        const item = $(`
+                            <div class="search-result-item d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <i data-lucide="music" class="me-3" style="width: 20px; height: 20px; color: var(--spotify-green);"></i>
+                                    <div>
+                                        <div class="fw-medium">${track.title}</div>
+                                        <small class="text-secondary">${track.artist} - ${track.album}</small>
+                                    </div>
+                                </div>
+                                <button class="btn btn-sm btn-success associate-btn" data-plex-rating-key="${track.ratingKey}">
+                                    <i data-lucide="link" class="me-1" style="width: 14px; height: 14px;"></i>
+                                    Associa
+                                </button>
+                            </div>
+                        `);
+                        $('#plexResults').append(item);
+                    });
+                } else {
+                    $('#plexResults').html('<div class="text-center p-3 text-secondary"><i data-lucide="search-x" class="me-2" style="width: 20px; height: 20px;"></i>Nessun risultato trovato</div>');
+                }
+                
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            })
+            .fail(function() {
+                $('#plexResults').html('<div class="text-center p-3 text-danger"><i data-lucide="alert-circle" class="me-2" style="width: 20px; height: 20px;"></i>Errore durante la ricerca</div>');
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            })
+            .always(function() {
+                button.html(originalHtml).prop('disabled', false);
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            });
+    });
+
+    // DELEGA EVENTO: Gestione Associazione Traccia
+    $('#manualSearchModal').on('click', '.associate-btn', function() {
+        const plexTrackRatingKey = $(this).data('plex-rating-key');
+        const userKey = 'main';
+        const button = $(this);
+        const originalHtml = button.html();
+        
+        button.prop('disabled', true).html('<i data-lucide="loader" class="me-1" style="width: 14px; height: 14px;"></i>Associa...');
+
+        $.ajax({
+            url: '{{ url_for("associate_track") }}',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ 
+                missing_track_id: missingTrackId,
+                plex_track_rating_key: plexTrackRatingKey,
+                user_key: userKey
+            }),
+            success: function(response) {
+                if(response.success) {
+                    showNotification(response.message, 'success');
+                    $('#manualSearchModal').modal('hide');
+                    // Update track status in the main list
+                    $(`.track-row[data-track-id="${missingTrackId}"]`).find('.status-badge')
+                        .removeClass('bg-warning').addClass('bg-success')
+                        .html('<i data-lucide="check-circle" style="width: 12px; height: 12px;" class="me-1"></i>resolved_manual');
+                    updateStats();
+                } else {
+                    showNotification('Errore: ' + response.error, 'error');
+                    button.prop('disabled', false).html(originalHtml);
+                }
+            },
+            error: function() {
+                showNotification('Errore di comunicazione con il server', 'error');
+                button.prop('disabled', false).html(originalHtml);
+            },
+            complete: function() {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }
+        });
+    });
+
+    // Gestione Ricerca Deezer
+    $('#deezerSearchBtn').on('click', function() {
+        const button = $(this);
+        const originalHtml = button.html();
+        button.html('<i data-lucide="loader" class="me-2" style="width: 16px; height: 16px;"></i>Ricerca...').prop('disabled', true);
+        
+        $('#deezerResults').html('<div class="text-center p-3"><i data-lucide="loader" class="me-2" style="width: 20px; height: 20px;"></i>Ricerca album su Deezer...</div>');
+        
+        const deezerSearchUrl = "{{ url_for('search_deezer_manual') }}";
+        $.get(`${deezerSearchUrl}?title=${encodeURIComponent(trackTitle)}&artist=${encodeURIComponent(trackArtist)}`)
+            .done(function(data) {
+                $('#deezerResults').empty();
+                if (data.length > 0) {
+                    data.forEach(function(result) {
+                        const albumUrl = `https://www.deezer.com/album/${result.album.id}`;
+                        const item = $(`
+                            <div class="search-result-item d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <img src="${result.album.cover_medium}" width="50" height="50" class="me-3 rounded" style="border-radius: var(--radius-sm);">
+                                    <div>
+                                        <div class="fw-medium">${result.title}</div>
+                                        <small class="text-secondary">${result.artist.name} - ${result.album.title}</small>
+                                    </div>
+                                </div>
+                                <button class="btn btn-sm btn-primary download-btn" data-album-url="${albumUrl}">
+                                    <i data-lucide="download" class="me-1" style="width: 14px; height: 14px;"></i>
+                                    Scarica Album
+                                </button>
+                            </div>
+                        `);
+                        $('#deezerResults').append(item);
+                    });
+                } else {
+                    $('#deezerResults').html('<div class="text-center p-3 text-secondary"><i data-lucide="search-x" class="me-2" style="width: 20px; height: 20px;"></i>Nessun album trovato su Deezer</div>');
+                }
+                
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            })
+            .fail(function() {
+                $('#deezerResults').html('<div class="text-center p-3 text-danger"><i data-lucide="alert-circle" class="me-2" style="width: 20px; height: 20px;"></i>Errore durante la ricerca su Deezer</div>');
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            })
+            .always(function() {
+                button.html(originalHtml).prop('disabled', false);
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            });
+    });
+
+    // DELEGA EVENTO: Gestione Download Traccia
+    $('#manualSearchModal').on('click', '.download-btn', function() {
+        const albumUrl = $(this).data('album-url');
+        const button = $(this);
+        const originalHtml = button.html();
+        
+        button.prop('disabled', true).html('<i data-lucide="loader" class="me-1" style="width: 14px; height: 14px;"></i>Download...');
+
+        $.ajax({
+            url: '{{ url_for("download_track") }}',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ 
+                track_id: missingTrackId,
+                album_url: albumUrl
+            }),
+            success: function(response) {
+                if(response.success) {
+                    showNotification(response.message, 'success');
+                    $('#manualSearchModal').modal('hide');
+                    // Update track status in the main list
+                    $(`.track-row[data-track-id="${missingTrackId}"]`).find('.status-badge')
+                        .removeClass('bg-warning').addClass('bg-info')
+                        .html('<i data-lucide="download" style="width: 12px; height: 12px;" class="me-1"></i>downloaded');
+                } else {
+                    showNotification('Errore: ' + response.error, 'error');
+                    button.prop('disabled', false).html(originalHtml);
+                }
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                if (jqXHR.status == 409) {
+                    showNotification('Un\'altra operazione è già in corso. Attendi il completamento e riprova.', 'warning');
+                } else {
+                    showNotification('Errore di comunicazione con il server: ' + textStatus, 'error');
+                }
+                button.prop('disabled', false).html(originalHtml);
+            },
+            complete: function() {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }
+        });
+    });
+    // Gestione checkbox "Seleziona Tutto"
+    $('#selectAllTracks').on('change', function() {
+        $('.track-checkbox').prop('checked', $(this).prop('checked'));
+    });
+
+    // Gestione pulsante "Cerca e Scarica Selezionati"
+    $('#downloadSelectedBtn').on('click', async function() {
+        const selectedTracks = [];
+        $('.track-checkbox:checked').each(function() {
+            selectedTracks.push({
+                track_id: $(this).data('track-id'),
+                title: $(this).data('title'),
+                artist: $(this).data('artist')
+            });
+        });
+
+        if (selectedTracks.length === 0) {
+            alert('Seleziona almeno una traccia da scaricare.');
+            return;
+        }
+
+        if (!confirm(`Sei sicuro di voler cercare e scaricare ${selectedTracks.length} tracce selezionate?`)) {
+            return;
+        }
+
+        $(this).prop('disabled', true).text('Elaborazione...');
+        let successfulDownloads = 0;
+        let failedDownloads = 0;
+
+        for (const track of selectedTracks) {
+            try {
+                const deezerSearchResponse = await $.get(`{{ url_for('search_deezer_manual') }}?title=${encodeURIComponent(track.title)}&artist=${encodeURIComponent(track.artist)}`);
+                if (deezerSearchResponse.length > 0) {
+                    const albumUrl = `https://www.deezer.com/album/${deezerSearchResponse[0].album.id}`;
+                    const downloadResponse = await $.ajax({
+                        url: '{{ url_for("download_track") }}',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({
+                            track_id: track.track_id,
+                            album_url: albumUrl
+                        })
+                    });
+                    if (downloadResponse.success) {
+                        successfulDownloads++;
+                    } else {
+                        failedDownloads++;
+                        console.error(`Errore durante il download di ${track.title} - ${track.artist}: ${downloadResponse.error}`);
+                    }
+                } else {
+                    failedDownloads++;
+                    console.warn(`Nessun link Deezer trovato per ${track.title} - ${track.artist}`);
+                }
+            } catch (error) {
+                failedDownloads++;
+                console.error(`Errore durante l'elaborazione di ${track.title} - ${track.artist}:`, error);
+            }
+        }
+
+        alert(`Elaborazione completata.\nDownload aggiunti alla coda: ${successfulDownloads}\nDownload falliti/non trovati: ${failedDownloads}`);
+        $(this).prop('disabled', false).text('Cerca e Scarica Selezionati');
+        location.reload(); // Ricarica la pagina per aggiornare lo stato
+    });
+});
+</script>
+{% endblock %}

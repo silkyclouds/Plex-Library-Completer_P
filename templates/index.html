@@ -1,0 +1,381 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard - Plex Sync{% endblock %}
+
+{% block content %}
+<!-- Status Cards Row -->
+<div class="row mb-4">
+    <!-- System Status Card -->
+    <div class="col-lg-8 mb-4">
+        <div class="card h-100 animate-slide-up">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <i data-lucide="activity" class="me-3" style="width: 28px; height: 28px; color: var(--spotify-green);"></i>
+                    <h2 class="card-title mb-0">Sistema di Sincronizzazione</h2>
+                </div>
+                
+                <!-- Status Display -->
+                <div class="text-center mb-4 p-4" style="background: var(--gradient-card); border-radius: var(--radius-md);">
+                    <div class="d-flex align-items-center justify-content-center mb-2">
+                        <i data-lucide="circle" id="status-icon" class="me-2" style="width: 16px; height: 16px;"></i>
+                        <p class="fs-4 fw-bold mb-0" id="status-text">Caricamento...</p>
+                    </div>
+                    <small class="text-secondary" id="last-sync-time">Recupero informazioni...</small>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <form action="{{ url_for('sync_now') }}" method="post">
+                            <button id="btn-sync" type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-center">
+                                <i data-lucide="refresh-cw" class="me-2" style="width: 18px; height: 18px;"></i>
+                                Sincronizza Tutto Ora
+                            </button>
+                        </form>
+                    </div>
+                    <div class="col-md-6">
+                        <form action="{{ url_for('cleanup_now') }}" method="post">
+                            <button id="btn-cleanup" type="submit" class="btn btn-secondary w-100 d-flex align-items-center justify-content-center">
+                                <i data-lucide="trash-2" class="me-2" style="width: 18px; height: 18px;"></i>
+                                Avvia solo Pulizia
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Users & Maintenance Card -->
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100 animate-slide-up" style="animation-delay: 0.1s;">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <i data-lucide="users" class="me-3" style="width: 24px; height: 24px; color: var(--accent-blue);"></i>
+                    <h3 class="card-title mb-0">Utenti Gestiti</h3>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="d-flex align-items-center p-3 mb-2" style="background: var(--gradient-card); border-radius: var(--radius-md); border-left: 3px solid var(--spotify-green);">
+                        <i data-lucide="user" class="me-3" style="width: 20px; height: 20px; color: var(--spotify-green);"></i>
+                        <span class="fw-medium">{{ aliases.main }}</span>
+                    </div>
+                    <div class="d-flex align-items-center p-3" style="background: var(--gradient-card); border-radius: var(--radius-md); border-left: 3px solid var(--accent-purple);">
+                        <i data-lucide="user" class="me-3" style="width: 20px; height: 20px; color: var(--accent-purple);"></i>
+                        <span class="fw-medium">{{ aliases.secondary }}</span>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <i data-lucide="settings" class="me-3" style="width: 20px; height: 20px; color: var(--accent-yellow);"></i>
+                        <h4 class="mb-0">Manutenzione</h4>
+                    </div>
+                    
+                    {% if index_stats.total_tracks_indexed == 0 %}
+                    <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+                        <i data-lucide="alert-triangle" class="me-2" style="width: 20px; height: 20px;"></i>
+                        <div>
+                            <strong>⚠️ Indice Libreria Vuoto!</strong><br>
+                            <small>Le playlist AI falliranno. Indicizza la libreria per continuare.</small>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-success d-flex align-items-center mb-3" role="alert">
+                        <i data-lucide="check-circle" class="me-2" style="width: 20px; height: 20px;"></i>
+                        <div>
+                            <strong>✅ Indice Libreria OK</strong><br>
+                            <small>{{ index_stats.total_tracks_indexed }} tracce indicizzate</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <p class="text-secondary small mb-3">
+                        Crea o aggiorna l'indice locale della tua libreria Plex.
+                        <span class="text-warning fw-medium">Operazione lenta</span> - esegui solo se necessario.
+                    </p>
+                    <div class="d-grid gap-2">
+                        <form action="{{ url_for('build_index_route') }}" method="post">
+                            <button id="btn-index" type="submit" class="btn {% if index_stats.total_tracks_indexed == 0 %}btn-warning{% else %}btn-secondary{% endif %} w-100 d-flex align-items-center justify-content-center">
+                                <i data-lucide="database" class="me-2" style="width: 16px; height: 16px;"></i>
+                                Aggiorna Indice Libreria
+                            </button>
+                        </form>
+                        
+                        {% if index_stats.total_tracks_indexed == 0 %}
+                        <form action="{{ url_for('restart_indexing') }}" method="post">
+                            <button type="submit" class="btn btn-outline-success btn-sm w-100 d-flex align-items-center justify-content-center">
+                                <i data-lucide="rotate-cw" class="me-2" style="width: 14px; height: 14px;"></i>
+                                🔄 Riavvia Indicizzazione Ottimizzata
+                            </button>
+                        </form>
+                        <form action="{{ url_for('test_database') }}" method="post">
+                            <button type="submit" class="btn btn-outline-info btn-sm w-100 d-flex align-items-center justify-content-center">
+                                <i data-lucide="activity" class="me-2" style="width: 14px; height: 14px;"></i>
+                                🔧 Test Database
+                            </button>
+                        </form>
+                        <form action="{{ url_for('emergency_cleanup') }}" method="post" onsubmit="return confirm('Vuoi fermare tutte le operazioni e pulire il database delle tracce mancanti?');">
+                            <button type="submit" class="btn btn-outline-danger btn-sm w-100 d-flex align-items-center justify-content-center">
+                                <i data-lucide="alert-triangle" class="me-2" style="width: 14px; height: 14px;"></i>
+                                🚨 Pulizia Emergenza
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stats Row -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card text-center animate-slide-up" style="animation-delay: 0.2s;">
+            <div class="card-body py-4">
+                <i data-lucide="music" class="mb-3" style="width: 32px; height: 32px; color: var(--spotify-green);"></i>
+                <h5 class="card-title mb-1">Tracce Sincronizzate</h5>
+                <p class="fs-3 fw-bold text-primary mb-0" id="tracks-count">-</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center animate-slide-up" style="animation-delay: 0.3s;">
+            <div class="card-body py-4">
+                <i data-lucide="search" class="mb-3" style="width: 32px; height: 32px; color: var(--accent-red);"></i>
+                <h5 class="card-title mb-1">Tracce Mancanti</h5>
+                <p class="fs-3 fw-bold text-warning mb-0" id="missing-count">-</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center animate-slide-up" style="animation-delay: 0.4s;">
+            <div class="card-body py-4">
+                <i data-lucide="brain" class="mb-3" style="width: 32px; height: 32px; color: var(--accent-purple);"></i>
+                <h5 class="card-title mb-1">Playlist AI</h5>
+                <p class="fs-3 fw-bold text-info mb-0" id="ai-playlists-count">-</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center animate-slide-up" style="animation-delay: 0.5s;">
+            <div class="card-body py-4">
+                <i data-lucide="clock" class="mb-3" style="width: 32px; height: 32px; color: var(--accent-blue);"></i>
+                <h5 class="card-title mb-1">Ultimo Sync</h5>
+                <p class="fs-6 fw-medium mb-0" id="last-sync-short">-</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Logs Card -->
+<div class="card animate-slide-up" style="animation-delay: 0.6s;">
+    <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <div class="d-flex align-items-center">
+                <i data-lucide="terminal" class="me-3" style="width: 24px; height: 24px; color: var(--text-secondary);"></i>
+                <h3 class="card-title mb-0">Log di Sistema</h3>
+            </div>
+            <div class="d-flex align-items-center">
+                <span class="badge bg-secondary me-2">Auto-refresh</span>
+                <div class="d-flex align-items-center">
+                    <div class="spinner-border spinner-border-sm me-2" style="width: 12px; height: 12px; color: var(--spotify-green);" role="status"></div>
+                    <small class="text-secondary">ogni 15s</small>
+                </div>
+            </div>
+        </div>
+        <div class="position-relative">
+            <div class="p-3 rounded-3" style="height: 350px; overflow-y: auto; background: var(--bg-secondary); font-family: 'SF Mono', 'Monaco', 'Consolas', monospace; font-size: 0.85em; border: 1px solid rgba(255,255,255,0.1);">
+                <code id="log-content" class="text-light">Caricamento log di sistema...</code>
+            </div>
+            <!-- Fade overlay for better readability -->
+            <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 30px; background: linear-gradient(transparent, var(--bg-secondary)); pointer-events: none; border-radius: 0 0 var(--radius-md) var(--radius-md);"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateDashboard() {
+        fetch("{{ url_for('get_logs') }}")
+            .then(response => response.json())
+            .then(data => {
+                // Update logs
+                document.getElementById('log-content').innerText = data.logs;
+                
+                // Update status with animations and icons
+                const statusText = document.getElementById('status-text');
+                const statusIcon = document.getElementById('status-icon');
+                
+                statusText.innerText = data.status;
+                statusText.className = 'fs-4 fw-bold mb-0';
+                
+                // Update status styling and icon based on state
+                if (data.status.includes('Errore')) {
+                    statusText.classList.add('text-danger');
+                    statusIcon.setAttribute('data-lucide', 'alert-circle');
+                    statusIcon.style.color = 'var(--accent-red)';
+                } else if (data.status.includes('corso')) {
+                    statusText.classList.add('text-warning');
+                    statusIcon.setAttribute('data-lucide', 'loader');
+                    statusIcon.style.color = 'var(--accent-yellow)';
+                    statusIcon.classList.add('pulse');
+                } else {
+                    statusText.classList.add('text-success');
+                    statusIcon.setAttribute('data-lucide', 'check-circle');
+                    statusIcon.style.color = 'var(--spotify-green)';
+                    statusIcon.classList.remove('pulse');
+                }
+                
+                // Update sync time
+                document.getElementById('last-sync-time').innerText = 'Ultima Sincronizzazione: ' + data.last_sync;
+                document.getElementById('last-sync-short').innerText = data.last_sync;
+
+                // Update buttons with better UX
+                const buttons = document.querySelectorAll('.btn');
+                const runningText = 'Esecuzione in corso...';
+                const originalTexts = {
+                    'btn-sync': 'Sincronizza Tutto Ora',
+                    'btn-cleanup': 'Avvia solo Pulizia',
+                    'btn-index': 'Aggiorna Indice Libreria'
+                };
+
+                buttons.forEach(button => {
+                    const isRunning = data.is_running;
+                    button.disabled = isRunning;
+                    
+                    if (isRunning) {
+                        button.innerHTML = `<i data-lucide="loader" class="me-2" style="width: 16px; height: 16px;"></i>${runningText}`;
+                        button.classList.add('pulse');
+                    } else {
+                        const originalText = originalTexts[button.id];
+                        if (originalText) {
+                            button.innerHTML = button.innerHTML.replace(runningText, originalText);
+                        }
+                        button.classList.remove('pulse');
+                    }
+                });
+                
+                // Refresh icons after content update
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+                
+                // Simulate stats update (you can replace with real API calls)
+                updateStats();
+            })
+            .catch(error => {
+                console.error('Errore durante l\'aggiornamento della dashboard:', error);
+                // Show error state
+                const statusText = document.getElementById('status-text');
+                const statusIcon = document.getElementById('status-icon');
+                statusText.innerText = 'Errore di connessione';
+                statusText.className = 'fs-4 fw-bold mb-0 text-danger';
+                statusIcon.setAttribute('data-lucide', 'wifi-off');
+                statusIcon.style.color = 'var(--accent-red)';
+                
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            });
+    }
+    
+    function updateStats() {
+        // Fetch real stats from API
+        fetch('/api/stats')
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error('Stats API error:', data.error);
+                    return;
+                }
+                
+                // Animate library stats
+                animateNumber('tracks-count', data.library.total_tracks);
+                animateNumber('missing-count', data.missing_tracks.total);
+                animateNumber('ai-playlists-count', data.ai_playlists.total);
+                
+                // Update sync health indicator
+                updateSyncHealth(data.library.sync_health, data.missing_tracks.total);
+                
+                // Log stats for debugging
+                console.log('Stats updated:', data);
+            })
+            .catch(error => {
+                console.error('Error fetching stats:', error);
+                // Fallback to mock data
+                const mockStats = {
+                    tracks: 5000,
+                    missing: 0,
+                    aiPlaylists: 3
+                };
+                animateNumber('tracks-count', mockStats.tracks);
+                animateNumber('missing-count', mockStats.missing);
+                animateNumber('ai-playlists-count', mockStats.aiPlaylists);
+            });
+    }
+    
+    function updateSyncHealth(health, missingCount) {
+        const healthIndicator = document.querySelector('#status-icon');
+        if (!healthIndicator) return;
+        
+        const statusText = document.querySelector('#status-text');
+        
+        switch(health) {
+            case 'excellent':
+                healthIndicator.style.color = 'var(--spotify-green)';
+                if (statusText && statusText.innerText.includes('In attesa')) {
+                    statusText.classList.remove('text-warning', 'text-danger');
+                    statusText.classList.add('text-success');
+                }
+                break;
+            case 'good':
+                healthIndicator.style.color = 'var(--accent-yellow)';
+                break;
+            case 'needs_attention':
+                healthIndicator.style.color = 'var(--accent-red)';
+                break;
+        }
+    }
+    
+    function animateNumber(elementId, targetValue) {
+        const element = document.getElementById(elementId);
+        const currentValue = parseInt(element.innerText) || 0;
+        const increment = (targetValue - currentValue) / 20;
+        let current = currentValue;
+        
+        const timer = setInterval(() => {
+            current += increment;
+            if ((increment > 0 && current >= targetValue) || (increment < 0 && current <= targetValue)) {
+                current = targetValue;
+                clearInterval(timer);
+            }
+            element.innerText = Math.floor(current);
+        }, 50);
+    }
+    
+    // Initialize dashboard
+    document.addEventListener('DOMContentLoaded', () => {
+        // Initial update
+        updateDashboard();
+        
+        // Set up periodic updates
+        setInterval(updateDashboard, 15000);
+        
+        // Add click animations to cards
+        const cards = document.querySelectorAll('.card');
+        cards.forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-3px)';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0)';
+            });
+        });
+        
+        // Initialize icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,229 @@
+{
+  "playlists": {
+    "main_weekly": {
+      "name": "Settimana 26 Mixtape - Settimana 26",
+      "description": "Un mix di successi, classici e novità per una settimana di emozioni musicali.",
+      "tracks": [
+        {
+          "artist": "Vasco Rossi",
+          "title": "Vivere"
+        },
+        {
+          "artist": "Queen",
+          "title": "A Kind Of Magic (Remastered 2011)"
+        },
+        {
+          "artist": "Renato Zero",
+          "title": "Mi vendo"
+        },
+        {
+          "artist": "Timoria",
+          "title": "Sangue impazzito"
+        },
+        {
+          "artist": "Madame",
+          "title": "VOCE"
+        },
+        {
+          "artist": "Toto",
+          "title": "Africa"
+        },
+        {
+          "artist": "Alan Walker",
+          "title": "Alone"
+        },
+        {
+          "artist": "P!nk",
+          "title": "What About Us"
+        },
+        {
+          "artist": "Adriano Celentano",
+          "title": "Il ragazzo della via Gluck"
+        },
+        {
+          "artist": "Lucio Dalla",
+          "title": "Piazza Grande"
+        },
+        {
+          "artist": "Foo Fighters",
+          "title": "Learn to Fly"
+        },
+        {
+          "artist": "Weezer",
+          "title": "Island in the Sun"
+        },
+        {
+          "artist": "Ghali",
+          "title": "Happy Days"
+        },
+        {
+          "artist": "Liberato",
+          "title": "JE TE VOGLIO BENE ASSAJE"
+        },
+        {
+          "artist": "Roxette",
+          "title": "Sleeping in My Car"
+        },
+        {
+          "artist": "Johnny Cash",
+          "title": "Personal Jesus (Album Version)"
+        },
+        {
+          "artist": "Queen",
+          "title": "Another One Bites the Dust (Remastered 2011)"
+        },
+        {
+          "artist": "Caparezza",
+          "title": "La mia parte intollerante"
+        },
+        {
+          "artist": "883",
+          "title": "Ti sento vivere"
+        },
+        {
+          "artist": "Joji",
+          "title": "Glimpse of Us"
+        },
+        {
+          "artist": "P!nk",
+          "title": "Just Give Me a Reason"
+        },
+        {
+          "artist": "Corinne Bailey Rae",
+          "title": "Put Your Records On"
+        },
+        {
+          "artist": "The Chainsmokers",
+          "title": "Something Just Like This"
+        },
+        {
+          "artist": "Meduza",
+          "title": "Piece of Your Heart"
+        },
+        {
+          "artist": "Billie Eilish",
+          "title": "What Was I Made For? [From The Motion Picture \"Barbie\"]"
+        }
+      ],
+      "week_info": {
+        "year": 2025,
+        "week": 26
+      },
+      "created_at": "2025-06-28T12:17:20.677956",
+      "plex_rating_key": 442552
+    },
+    "secondary_weekly": {
+      "name": "Settimana 26: Mix estivo - Settimana 26",
+      "description": "Un mix di hit estive, novità e classici per una settimana di puro divertimento.",
+      "tracks": [
+        {
+          "artist": "Måneskin",
+          "title": "SUPERMODEL"
+        },
+        {
+          "artist": "Travis Scott",
+          "title": "goosebumps"
+        },
+        {
+          "artist": "Lil Nas X",
+          "title": "INDUSTRY BABY"
+        },
+        {
+          "artist": "BLANCO",
+          "title": "Notti in bianco"
+        },
+        {
+          "artist": "will.i.am (David Guetta Remix)",
+          "title": "MIND YOUR BUSINESS"
+        },
+        {
+          "artist": "Elodie",
+          "title": "Bagno a mezzanotte"
+        },
+        {
+          "artist": "Dua Lipa",
+          "title": "Levitating"
+        },
+        {
+          "artist": "J-Ax",
+          "title": "Senza pagare"
+        },
+        {
+          "artist": "Skioffi",
+          "title": "Yolandi"
+        },
+        {
+          "artist": "Rema",
+          "title": "Calm Down"
+        },
+        {
+          "artist": "Tones and I",
+          "title": "Dance Monkey"
+        },
+        {
+          "artist": "Pinguini Tattici Nucleari",
+          "title": "Ringo Starr"
+        },
+        {
+          "artist": "Ultimo",
+          "title": "I tuoi particolari"
+        },
+        {
+          "artist": "Marco Mengoni",
+          "title": "L'essenziale"
+        },
+        {
+          "artist": "Irama",
+          "title": "La genesi del tuo colore"
+        },
+        {
+          "artist": "Sangiovanni",
+          "title": "lady"
+        },
+        {
+          "artist": "Tananai",
+          "title": "BABY GODDAMN"
+        },
+        {
+          "artist": "Rosa Chemical",
+          "title": "MADE IN ITALY"
+        },
+        {
+          "artist": "Fedez",
+          "title": "LA DOLCE VITA"
+        },
+        {
+          "artist": "Ava Max",
+          "title": "Sweet but Psycho"
+        },
+        {
+          "artist": "Avicii",
+          "title": "Wake Me Up"
+        },
+        {
+          "artist": "Imagine Dragons",
+          "title": "Radioactive"
+        },
+        {
+          "artist": "The Killers",
+          "title": "Human"
+        },
+        {
+          "artist": "Clean Bandit",
+          "title": "Symphony"
+        },
+        {
+          "artist": "Måneskin",
+          "title": "Coraline"
+        }
+      ],
+      "week_info": {
+        "year": 2025,
+        "week": 26
+      },
+      "created_at": "2025-06-28T12:17:46.906076",
+      "plex_rating_key": 442553
+    }
+  },
+  "last_update": "2025-06-28T12:17:46.906370"
+}
