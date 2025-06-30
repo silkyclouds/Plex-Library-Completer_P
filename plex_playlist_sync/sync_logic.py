@@ -29,69 +29,69 @@ load_dotenv()
 
 def build_library_index(app_state: Dict):
     """
-    Esegue una scansione completa della libreria Plex e popola l'indice locale.
-    Versione PARALLELA con controlli robusti e debug esteso.
+    Performs a complete scan of the Plex library and populates the local index.
+    PARALLEL version with robust controls and extended debugging.
     """
-    import os  # Import necessario per os.getenv
-    logger.info("=== AVVIO INDICIZZAZIONE PARALLELA LIBRERIA PLEX ===")
+    import os  # Import needed for os.getenv
+    logger.info("=== STARTING PARALLEL PLEX LIBRARY INDEXING ===")
     plex_url, plex_token = os.getenv("PLEX_URL"), os.getenv("PLEX_TOKEN")
     library_name = os.getenv("LIBRARY_NAME", "Musica")
 
     if not (plex_url and plex_token):
-        logger.error("❌ URL o Token di Plex non configurati. Impossibile indicizzare.")
-        app_state['status'] = "Errore: URL o Token Plex mancanti."
+        logger.error("❌ Plex URL or Token not configured. Cannot index.")
+        app_state['status'] = "Error: Missing Plex URL or Token."
         return
 
     try:
         # FASE 1: Inizializzazione e controlli
         from .utils.database import initialize_db, clear_library_index, add_track_to_index, get_library_index_stats
         
-        logger.info("🔧 Inizializzazione database...")
+        logger.info("🔧 Database initialization...")
         initialize_db()
         
         # Verifica stato database
         initial_stats = get_library_index_stats()
-        logger.info(f"📊 Stato iniziale indice: {initial_stats['total_tracks_indexed']} tracce")
+        logger.info(f"📊 Initial index state: {initial_stats['total_tracks_indexed']} tracks")
         
         # Connessione con timeout esteso
-        app_state['status'] = "Connessione a Plex Server..."
+        app_state['status'] = "Connecting to Plex Server..."
         plex = PlexServer(plex_url, plex_token, timeout=120)
         
         try:
             music_library = plex.library.section(library_name)
-            logger.info(f"✅ Connesso alla libreria '{library_name}'")
+            logger.info(f"✅ Connected to library '{library_name}'")
         except Exception as lib_error:
-            logger.error(f"❌ Errore accesso libreria '{library_name}': {lib_error}")
-            app_state['status'] = f"Errore: Libreria '{library_name}' non trovata"
+            logger.error(f"❌ Error accessing library '{library_name}': {lib_error}")
+            app_state['status'] = f"Error: Library '{library_name}' not found"
             return
         
         # FASE 2: Stima totale tracce
-        app_state['status'] = "Stimando dimensione libreria..."
+        app_state['status'] = "Estimating library size..."
         try:
             # Prova a ottenere il totale con un metodo veloce
             total_estimate = len(music_library.search(libtype='track', limit=50000))
-            logger.info(f"📊 Stima tracce nella libreria: ~{total_estimate}")
+            logger.info(f"📊 Estimated tracks in library: ~{total_estimate}")
         except Exception:
-            logger.warning("⚠️ Impossibile stimare dimensione libreria, procedo comunque")
+            logger.warning("⚠️ Unable to estimate library size, proceeding anyway")
             total_estimate = 0
         
         # FASE 3: Svuotamento indice esistente
-        app_state['status'] = "Svuotamento indice esistente..."
-        logger.info("🗺️ Svuotamento indice esistente...")
+        app_state['status'] = "Clearing existing index..."
+        logger.info("🗺️ Clearing existing index...")
         clear_library_index()
         
         # FASE 4: Scarica TUTTE le tracce una volta sola (evita ripetuti fetch)
-        logger.info("📥 Scaricamento completo tracce da Plex (una volta sola)...")
+        logger.info("📥 Downloading complete tracks from Plex (one time only)...")
         all_tracks = music_library.search(libtype='track')
         total_tracks = len(all_tracks)
-        logger.info(f"✅ Scaricate {total_tracks} tracce totali da Plex")
+        logger.info(f"✅ Downloaded {total_tracks} total tracks from Plex")
         
         # FASE 5: Indicizzazione a batch delle tracce già scaricate
         batch_size = 2500  # Batch ridotti per evitare timeout
         total_processed = 0
         total_indexed = 0
         
-        logger.info(f"🚀 Avvio indicizzazione a batch (size: {batch_size})")
+        logger.info(f"🚀 Starting batch indexing (size: {batch_size})")
         
         container_start = 0
         batch_num = 0
@@ -106,10 +106,10 @@ def build_library_index(app_state: Dict):
                 batch_tracks = all_tracks[container_start:batch_end]
                 
                 if not batch_tracks:
-                    logger.info(f"🏁 Fine indicizzazione - batch vuoto")
+                    logger.info(f"🏁 End of indexing - empty batch")
                     break
                 
-                logger.info(f"🔄 Processando batch {batch_num}: {len(batch_tracks)} tracce (slice {container_start}:{batch_end})")
+                logger.info(f"🔄 Processing batch {batch_num}: {len(batch_tracks)} tracks (slice {container_start}:{batch_end})")
                 
                 # Processa il batch con inserimento BULK (PERFORMANCE OTTIMIZZATA)
                 try:
@@ -118,80 +118,80 @@ def build_library_index(app_state: Dict):
                     total_processed += len(batch_tracks)
                     batch_errors = len(batch_tracks) - batch_indexed
                     
-                    # Update status ogni batch
-                    app_state['status'] = f"Batch {batch_num}: {len(batch_tracks)} processate | Tot indicizzate: {total_indexed}"
+                    # Update status every batch
+                    app_state['status'] = f"Batch {batch_num}: {len(batch_tracks)} processed | Tot indexed: {total_indexed}"
                     
                 except Exception as batch_error:
-                    logger.error(f"Errore nel batch {batch_num}: {batch_error}")
+                    logger.error(f"Error in batch {batch_num}: {batch_error}")
                     batch_errors = len(batch_tracks)
                     batch_indexed = 0
                 
-                logger.info(f"✅ Batch {batch_num} completato: {batch_indexed}/{len(batch_tracks)} indicizzate, {batch_errors} errori")
+                logger.info(f"✅ Batch {batch_num} completed: {batch_indexed}/{len(batch_tracks)} indexed, {batch_errors} errors")
                 
-                # Progress update ogni 5 batch
+                # Progress update every 5 batches
                 if batch_num % 5 == 0:
                     current_stats = get_library_index_stats()
-                    logger.info(f"📊 Progresso generale: {total_processed} processate, {current_stats['total_tracks_indexed']} nel DB")
+                    logger.info(f"📊 General progress: {total_processed} processed, {current_stats['total_tracks_indexed']} in DB")
                 
                 container_start += batch_size
                 
                 # Se il batch è più piccolo del batch_size, abbiamo finito
                 if len(batch_tracks) < batch_size:
-                    logger.info(f"🏁 Ultimo batch completato - dimensione: {len(batch_tracks)}")
+                    logger.info(f"🏁 Last batch completed - size: {len(batch_tracks)}")
                     break
                     
             except Exception as batch_error:
-                logger.error(f"❌ Errore nel batch {batch_num}: {batch_error}")
+                logger.error(f"❌ Error in batch {batch_num}: {batch_error}")
                 container_start += batch_size
                 continue
 
-        # FASE 5: Verifica finale
+        # PHASE 5: Final verification
         final_stats = get_library_index_stats()
-        final_status = f"INDICIZZAZIONE COMPLETATA! {total_processed} processate, {final_stats['total_tracks_indexed']} indicizzate con successo in {batch_num} batch"
+        final_status = f"INDEXING COMPLETED! {total_processed} processed, {final_stats['total_tracks_indexed']} successfully indexed in {batch_num} batches"
         app_state['status'] = final_status
         logger.info(f"=== {final_status} ===")
         
-        # Debug informazioni database
+        # Debug database information
         from .utils.database import DB_PATH
         db_size = os.path.getsize(DB_PATH) if os.path.exists(DB_PATH) else 0
-        logger.info(f"📋 Database finale: {DB_PATH} ({db_size} bytes)")
+        logger.info(f"📋 Final database: {DB_PATH} ({db_size} bytes)")
         
     except Exception as e:
-        logger.error(f"❌ Errore critico durante l'indicizzazione della libreria: {e}", exc_info=True)
-        app_state['status'] = "Errore critico durante l'indicizzazione."
+        logger.error(f"❌ Critical error during library indexing: {e}", exc_info=True)
+        app_state['status'] = "Critical error during indexing."
 
 
 def sync_playlists_for_user(plex: PlexServer, user_inputs: UserInputs):
-    """Esegue la sincronizzazione Spotify e Deezer per un singolo utente."""
+    """Performs Spotify and Deezer synchronization for a single user."""
     if not (os.getenv("SKIP_SPOTIFY_SYNC", "0") == "1"):
-        logger.info(f"--- Avvio sync Spotify per utente {user_inputs.plex_token[:4]}... ---")
+        logger.info(f"--- Starting Spotify sync for user {user_inputs.plex_token[:4]}... ---")
         spotify_playlist_sync(plex, user_inputs)
     
     if not (os.getenv("SKIP_DEEZER_SYNC", "0") == "1"):
-        logger.info(f"--- Avvio sync Deezer per utente {user_inputs.plex_token[:4]}... ---")
+        logger.info(f"--- Starting Deezer sync for user {user_inputs.plex_token[:4]}... ---")
         deezer_playlist_sync(plex, user_inputs)
 
 def force_playlist_scan_and_missing_detection():
     """
-    Forza una scansione delle playlist esistenti su Plex per rilevare tracce mancanti.
-    ATTENZIONE: Richiede che l'indice libreria sia popolato per funzionare correttamente.
+    Forces a scan of existing playlists on Plex to detect missing tracks.
+    WARNING: Requires the library index to be populated to work correctly.
     """
     # Controllo preventivo indice libreria
     from .utils.database import get_library_index_stats
     index_stats = get_library_index_stats()
     
     if index_stats['total_tracks_indexed'] == 0:
-        logger.error("❌ BLOCCO SCANSIONE FORZATA: Indice libreria VUOTO!")
-        logger.error("⚠️ La scansione produrrebbe solo falsi positivi. Indicizza prima la libreria.")
+        logger.error("❌ BLOCKING FORCED SCAN: Library index EMPTY!")
+        logger.error("⚠️ Scan would only produce false positives. Index the library first.")
         return
     
-    logger.info(f"--- Avvio scansione forzata playlist (indice: {index_stats['total_tracks_indexed']} tracce) ---")
+    logger.info(f"--- Starting forced playlist scan (index: {index_stats['total_tracks_indexed']} tracks) ---")
     
     plex_url = os.getenv("PLEX_URL")
     plex_token = os.getenv("PLEX_TOKEN")
     
     if not (plex_url and plex_token):
-        logger.error("Credenziali Plex non configurate")
+        logger.error("Plex credentials not configured")
         return
     
     try:
@@ -199,9 +199,9 @@ def force_playlist_scan_and_missing_detection():
         
         # Ottieni tutte le playlist dell'utente e filtra quelle musicali
         all_playlists = plex.playlists()
-        logger.info(f"Trovate {len(all_playlists)} playlist totali")
+        logger.info(f"Found {len(all_playlists)} total playlists")
         
-        # Filtra playlist che non dovrebbero essere scansionate
+        # Filter playlists that should not be scanned
         tv_keywords = ['simpsons', 'simpson', 'family guy', 'american dad', 'king of the hill', 
                       'episode', 'tv', 'show', 'serie', 'film', 'movie', 'cinema']
         
@@ -209,36 +209,36 @@ def force_playlist_scan_and_missing_detection():
         for playlist in all_playlists:
             playlist_name_lower = playlist.title.lower()
             
-            # Skippa playlist TV/Film
+            # Skip TV/Movie playlists
             is_tv_playlist = any(keyword in playlist_name_lower for keyword in tv_keywords)
             
-            # Skippa playlist NO_DELETE (create da Plex, non possono avere tracce mancanti)
+            # Skip NO_DELETE playlists (created by Plex, cannot have missing tracks)
             is_no_delete = 'no_delete' in playlist_name_lower
             
             if is_tv_playlist:
-                logger.info(f"🎭 Saltata playlist TV/Film: '{playlist.title}'")
+                logger.info(f"🎭 Skipped TV/Movie playlist: '{playlist.title}'")
             elif is_no_delete:
-                logger.info(f"🚫 Saltata playlist NO_DELETE: '{playlist.title}' (creata da Plex)")
+                logger.info(f"🚫 Skipped NO_DELETE playlist: '{playlist.title}' (created by Plex)")
             else:
                 music_playlists.append(playlist)
         
-        logger.info(f"🎵 Scansione di {len(music_playlists)} playlist musicali (saltate {len(all_playlists) - len(music_playlists)} TV/Film)")
+        logger.info(f"🎵 Scanning {len(music_playlists)} music playlists (skipped {len(all_playlists) - len(music_playlists)} TV/Movie)")
         
         total_missing_found = 0
         
         for playlist in music_playlists:
             try:
-                logger.info(f"Scansione playlist: {playlist.title}")
+                logger.info(f"Scanning playlist: {playlist.title}")
                 
-                # Ottieni tracce della playlist
+                # Get playlist tracks
                 playlist_tracks = playlist.items()
                 missing_count = 0
                 
                 for track in playlist_tracks:
                     try:
-                        # Usa il nuovo sistema di matching intelligente
+                        # Use new smart matching system
                         if not check_track_in_index_smart(track.title, track.grandparentTitle):
-                            # Traccia potenzialmente mancante, aggiungila al DB
+                            # Potentially missing track, add to DB
                             track_data = {
                                 'title': track.title,
                                 'artist': track.grandparentTitle,
@@ -253,37 +253,37 @@ def force_playlist_scan_and_missing_detection():
                             total_missing_found += 1
                             
                     except Exception as track_error:
-                        logger.warning(f"Errore nel processare traccia {track.title}: {track_error}")
+                        logger.warning(f"Error processing track {track.title}: {track_error}")
                         continue
                 
                 if missing_count > 0:
-                    logger.info(f"Playlist '{playlist.title}': {missing_count} tracce mancanti rilevate")
+                    logger.info(f"Playlist '{playlist.title}': {missing_count} missing tracks detected")
                     
             except Exception as playlist_error:
-                logger.warning(f"Errore nel processare playlist {playlist.title}: {playlist_error}")
+                logger.warning(f"Error processing playlist {playlist.title}: {playlist_error}")
                 continue
         
-        logger.info(f"--- Scansione completata: {total_missing_found} tracce mancanti totali rilevate ---")
+        logger.info(f"--- Scan completed: {total_missing_found} total missing tracks detected ---")
         
     except Exception as e:
-        logger.error(f"Errore durante la scansione forzata playlist: {e}", exc_info=True)
+        logger.error(f"Error during forced playlist scan: {e}", exc_info=True)
 
 
 def run_downloader_only():
-    """Legge i brani mancanti dal DB, cerca i link in parallelo e avvia il download."""
-    logger.info("--- Avvio ricerca e download automatico per brani mancanti dal DB ---")
+    """Reads missing tracks from DB, searches for links in parallel and starts download."""
+    logger.info("--- Starting automatic search and download for missing tracks from DB ---")
     missing_tracks_from_db = get_missing_tracks()
     
     if not missing_tracks_from_db:
-        logger.info("Nessun brano mancante nel database da processare.")
+        logger.info("No missing tracks in database to process.")
         return False
 
-    logger.info(f"Trovati {len(missing_tracks_from_db)} brani mancanti. Avvio ricerca link in parallelo...")
+    logger.info(f"Found {len(missing_tracks_from_db)} missing tracks. Starting parallel link search...")
     tracks_with_links = []  # Lista di (track_id, link) per mantenere associazione
     
-    # Usiamo un ThreadPoolExecutor per parallelizzare le richieste di rete
+    # Use ThreadPoolExecutor to parallelize network requests
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-        # Creiamo un future per ogni chiamata all'API
+        # Create a future for each API call
         future_to_track = {executor.submit(DeezerLinkFinder.find_track_link, {'title': track[1], 'artist': track[2]}): track for track in missing_tracks_from_db}
         
         for future in concurrent.futures.as_completed(future_to_track):
@@ -292,54 +292,54 @@ def run_downloader_only():
             if link:
                 track_id = track[0]  # ID della traccia dal database
                 tracks_with_links.append((track_id, link))
-                logger.info(f"Link trovato per '{track[1]}' di '{track[2]}': {link}")
+                logger.info(f"Link found for '{track[1]}' by '{track[2]}': {link}")
 
     if tracks_with_links:
-        logger.info(f"Trovati {len(tracks_with_links)} link da scaricare.")
+        logger.info(f"Found {len(tracks_with_links)} links to download.")
         
-        # Raggruppa per link unici per evitare download doppi
+        # Group by unique links to avoid duplicate downloads
         unique_links = {}
         for track_id, link in tracks_with_links:
             if link not in unique_links:
                 unique_links[link] = []
             unique_links[link].append(track_id)
         
-        # Scarica ogni link unico e aggiorna tutte le tracce associate
+        # Download each unique link and update all associated tracks
         for link, track_ids in unique_links.items():
             try:
-                logger.info(f"Avvio download: {link} (per {len(track_ids)} tracce)")
+                logger.info(f"Starting download: {link} (for {len(track_ids)} tracks)")
                 download_single_track_with_streamrip(link)
                 
-                # Aggiorna lo status di tutte le tracce associate a questo link
+                # Update status of all tracks associated with this link
                 for track_id in track_ids:
                     update_track_status(track_id, 'downloaded')
-                    logger.info(f"Status aggiornato a 'downloaded' per traccia ID {track_id}")
+                    logger.info(f"Status updated to 'downloaded' for track ID {track_id}")
                     
             except Exception as e:
-                logger.error(f"Errore durante il download di {link}: {e}")
-                # Marca le tracce come errore invece che downloaded
+                logger.error(f"Error during download of {link}: {e}")
+                # Mark tracks as error instead of downloaded
                 for track_id in track_ids:
-                    logger.warning(f"Download fallito per traccia ID {track_id}")
+                    logger.warning(f"Download failed for track ID {track_id}")
         
         return True
     else:
-        logger.info("Nessun link di download trovato per i brani mancanti.")
+        logger.info("No download links found for missing tracks.")
         return False
 
 
 def rescan_and_update_missing():
-    """Scansiona le tracce aggiunte di recente a Plex e aggiorna la lista dei mancanti."""
-    logger.info("--- Avvio scansione post-download per pulire la lista dei brani mancanti ---")
+    """Scans recently added tracks to Plex and updates the missing list."""
+    logger.info("--- Starting post-download scan to clean missing tracks list ---")
     plex_url, plex_token = os.getenv("PLEX_URL"), os.getenv("PLEX_TOKEN")
     if not (plex_url and plex_token):
-        logger.error("URL o Token Plex principale non configurati.")
+        logger.error("Main Plex URL or Token not configured.")
         return
 
     try:
         plex = PlexServer(plex_url, plex_token)
         music_library = plex.library.section(os.getenv("LIBRARY_NAME", "Musica"))
         
-        logger.info("Ricerca di tracce aggiunte di recente a Plex per aggiornare l'indice...")
+        logger.info("Searching for recently added tracks to Plex to update index...")
         recently_added = music_library.search(sort="addedAt:desc", limit=500)
         
         newly_indexed_count = 0
@@ -351,46 +351,46 @@ def rescan_and_update_missing():
                 newly_indexed_count += 1
         
         if newly_indexed_count > 0:
-            logger.info(f"Aggiunte {newly_indexed_count} nuove tracce all'indice locale.")
+            logger.info(f"Added {newly_indexed_count} new tracks to local index.")
         else:
-            logger.info("Nessuna traccia nuova trovata da aggiungere all'indice.")
+            logger.info("No new tracks found to add to index.")
 
         tracks_to_verify = get_missing_tracks()
-        logger.info(f"Verifica di {len(tracks_to_verify)} brani dalla lista dei mancanti...")
+        logger.info(f"Verifying {len(tracks_to_verify)} tracks from missing list...")
 
         updated_tracks = []
         for track_info in tracks_to_verify:
             if check_track_in_index_smart(track_info[1], track_info[2]):
-                logger.info(f"SUCCESSO: La traccia '{track_info[1]}' è ora presente. Aggiorno lo stato.")
+                logger.info(f"SUCCESS: Track '{track_info[1]}' is now present. Updating status.")
                 update_track_status(track_info[0], 'downloaded')
                 updated_tracks.append(track_info)
         
-        # Auto-aggiorna le playlist AI se ci sono nuove tracce disponibili
+        # Auto-update AI playlists if there are new tracks available
         if updated_tracks:
             auto_update_ai_playlists(plex, updated_tracks)
         
-        logger.info("--- Scansione post-download completata ---")
+        logger.info("--- Post-download scan completed ---")
 
     except Exception as e:
-        logger.error(f"Errore critico durante la scansione post-download: {e}", exc_info=True)
+        logger.error(f"Critical error during post-download scan: {e}", exc_info=True)
 
 
 def run_cleanup_only():
-    """Esegue solo la pulizia delle vecchie playlist per tutti gli utenti."""
+    """Performs only cleanup of old playlists for all users."""
     if not (os.getenv("SKIP_CLEANUP", "0") == "1"):
         user_tokens = [os.getenv("PLEX_TOKEN"), os.getenv("PLEX_TOKEN_USERS")]
         for token in filter(None, user_tokens):
             try:
                 plex = PlexServer(os.getenv("PLEX_URL"), token)
-                logger.info(f"--- Avvio pulizia vecchie playlist per utente {token[:4]}... ---")
+                logger.info(f"--- Starting cleanup of old playlists for user {token[:4]}... ---")
                 delete_old_playlists(plex, os.getenv("LIBRARY_NAME"), int(os.getenv("WEEKS_LIMIT")), os.getenv("PRESERVE_TAG"))
             except Exception as e:
-                logger.error(f"Errore durante la connessione a Plex per la pulizia (utente {token[:4]}...): {e}")
+                logger.error(f"Error during Plex connection for cleanup (user {token[:4]}...): {e}")
 
 
 def run_full_sync_cycle():
-    """Esegue un ciclo completo di sincronizzazione, AI, e poi tenta il download/rescan."""
-    logger.info("Avvio di un nuovo ciclo di sincronizzazione completo...")
+    """Performs a complete cycle of synchronization, AI, and then attempts download/rescan."""
+    logger.info("Starting new complete synchronization cycle...")
     
     RUN_GEMINI_PLAYLIST_CREATION = os.getenv("RUN_GEMINI_PLAYLIST_CREATION", "0") == "1"
     AUTO_DELETE_AI_PLAYLIST = os.getenv("AUTO_DELETE_AI_PLAYLIST", "0") == "1"
@@ -443,78 +443,78 @@ def run_full_sync_cycle():
                         "main" if name == "main user" else "secondary"
                     )
                     if weekly_success:
-                        logger.info(f"✅ Playlist AI settimanale gestita con successo per {name}")
+                        logger.info(f"✅ Weekly AI playlist managed successfully for {name}")
                     else:
-                        logger.warning(f"⚠️ Problemi nella gestione playlist AI settimanale per {name}")
+                        logger.warning(f"⚠️ Issues managing weekly AI playlist for {name}")
                 except Exception as ai_error:
-                    logger.error(f"❌ Errore gestione playlist AI settimanale per {name}: {ai_error}")
+                    logger.error(f"❌ Error managing weekly AI playlist for {name}: {ai_error}")
                     continue
 
         except Exception as e:
-            logger.error(f"Errore critico durante l'elaborazione di {name}: {e}", exc_info=True)
+            logger.error(f"Critical error during processing of {name}: {e}", exc_info=True)
 
-    logger.info("Ciclo di sincronizzazione e AI completato.")
+    logger.info("Synchronization and AI cycle completed.")
     
-    # CONTROLLO CRITICO: Non eseguire scansione playlist se l'indice libreria è vuoto!
+    # CRITICAL CHECK: Do not run playlist scan if library index is empty!
     from .utils.database import get_library_index_stats
     index_stats = get_library_index_stats()
     
     if index_stats['total_tracks_indexed'] == 0:
-        logger.error("❌ BLOCCO SCANSIONE: Indice libreria VUOTO! Non posso rilevare tracce mancanti senza indice.")
-        logger.error("⚠️ Esegui 'Indicizza Libreria' dalla homepage prima di continuare.")
-        logger.error("🛑 Saltando scansione playlist e download per evitare falsi positivi massivi.")
-        return  # Esce dal ciclo senza fare nulla
+        logger.error("❌ BLOCKING SCAN: Library index EMPTY! Cannot detect missing tracks without index.")
+        logger.error("⚠️ Run 'Index Library' from homepage before continuing.")
+        logger.error("🛑 Skipping playlist scan and download to avoid massive false positives.")
+        return  # Exit cycle without doing anything
     
-    logger.info(f"✅ Indice libreria OK: {index_stats['total_tracks_indexed']} tracce indicizzate")
+    logger.info(f"✅ Library index OK: {index_stats['total_tracks_indexed']} tracks indexed")
     
-    # Forza scansione playlist per rilevare missing tracks se il DB è vuoto
+    # Force playlist scan to detect missing tracks if DB is empty
     current_missing_count = len(get_missing_tracks())
     if current_missing_count == 0:
-        logger.info("Nessuna traccia mancante nel DB. Forzo scansione playlist...")
+        logger.info("No missing tracks in DB. Forcing playlist scan...")
         force_playlist_scan_and_missing_detection()
     else:
-        logger.info(f"Trovate {current_missing_count} tracce mancanti nel DB esistente.")
+        logger.info(f"Found {current_missing_count} missing tracks in existing DB.")
     
     if RUN_DOWNLOADER:
         download_attempted = run_downloader_only()
         if download_attempted:
             wait_time = int(os.getenv("PLEX_SCAN_WAIT_TIME", "300"))
-            logger.info(f"Attendo {wait_time} secondi per dare a Plex il tempo di indicizzare...")
+            logger.info(f"Waiting {wait_time} seconds to give Plex time to index...")
             time.sleep(wait_time)
             rescan_and_update_missing()
     else:
-        logger.warning("Download automatico saltato come da configurazione.")
+        logger.warning("Automatic download skipped as per configuration.")
     
-    logger.info("--- Ciclo completo terminato ---")
+    logger.info("--- Complete cycle finished ---")
 
 
 def auto_update_ai_playlists(plex, updated_tracks):
     """
-    Aggiorna automaticamente le playlist AI gestite quando nuove tracce sono disponibili.
+    Automatically updates managed AI playlists when new tracks are available.
     
     Args:
-        plex: PlexServer instance (utente principale)
-        updated_tracks: Lista di tracce appena diventate disponibili
+        plex: PlexServer instance (main user)
+        updated_tracks: List of tracks that just became available
     """
-    logger.info("🔄 Auto-aggiornamento playlist AI con nuove tracce...")
+    logger.info("🔄 Auto-updating AI playlists with new tracks...")
     
     try:
         from .utils.database import get_managed_ai_playlists_for_user
         from .utils.plex import search_plex_track, update_or_create_plex_playlist
         
-        # Prepara connessioni per entrambi gli utenti
+        # Prepare connections for both users
         plex_url = os.getenv("PLEX_URL")
         main_token = os.getenv("PLEX_TOKEN") 
         secondary_token = os.getenv("PLEX_TOKEN_USERS")
         
-        # Crea connessioni separate per ogni utente
+        # Create separate connections for each user
         plex_connections = {}
         if main_token:
             plex_connections['main'] = PlexServer(plex_url, main_token)
         if secondary_token:
             plex_connections['secondary'] = PlexServer(plex_url, secondary_token)
         
-        # Ottieni playlist per ogni utente
+        # Get playlists for each user
         updated_count = 0
         for user_type in ['main', 'secondary']:
             if user_type not in plex_connections:
@@ -524,21 +524,21 @@ def auto_update_ai_playlists(plex, updated_tracks):
             user_playlists = get_managed_ai_playlists_for_user(user_type)
             
             if not user_playlists:
-                logger.info(f"Nessuna playlist AI per utente {user_type}")
+                logger.info(f"No AI playlists for user {user_type}")
                 continue
                 
-            logger.info(f"Trovate {len(user_playlists)} playlist AI per utente {user_type}")
+            logger.info(f"Found {len(user_playlists)} AI playlists for user {user_type}")
             
             for playlist_data in user_playlists:
-                playlist_title = playlist_data['title']  # title dalla tabella managed_ai_playlists
+                playlist_title = playlist_data['title']  # title from managed_ai_playlists table
                 source_playlist_titles = [track[4] for track in updated_tracks]  # source_playlist_title
                 
-                # Controlla se questa playlist AI ha tracce tra quelle appena scaricate
+                # Check if this AI playlist has tracks among those just downloaded
                 if playlist_title in source_playlist_titles:
-                    logger.info(f"🎵 Aggiornamento playlist AI '{playlist_title}' per utente {user_type}")
+                    logger.info(f"🎵 Updating AI playlist '{playlist_title}' for user {user_type}")
                     
                     try:
-                        # Trova la playlist su Plex dell'utente corretto
+                        # Find the playlist on Plex for the correct user
                         existing_playlist = None
                         for playlist in user_plex.playlists():
                             if playlist.title == playlist_title:
@@ -546,47 +546,47 @@ def auto_update_ai_playlists(plex, updated_tracks):
                                 break
                         
                         if existing_playlist:
-                            # Ottieni le tracce che ora sono disponibili per questa playlist
+                            # Get tracks that are now available for this playlist
                             new_tracks_for_playlist = [
                                 track for track in updated_tracks 
                                 if track[4] == playlist_title  # source_playlist_title
                             ]
                             
-                            # Cerca e aggiungi le nuove tracce trovate
+                            # Search and add the new tracks found
                             tracks_to_add = []
                             for track_info in new_tracks_for_playlist:
                                 track_title, track_artist = track_info[1], track_info[2]
                                 
-                                # Cerca la traccia su Plex usando la connessione dell'utente corretto
+                                # Search track on Plex using correct user connection
                                 plex_track = search_plex_track(user_plex, track_title, track_artist)
                                 if plex_track:
                                     tracks_to_add.append(plex_track)
-                                    logger.info(f"✅ Trovata traccia per aggiunta: '{track_title}' di '{track_artist}'")
+                                    logger.info(f"✅ Found track for addition: '{track_title}' by '{track_artist}'")
                             
-                            # Aggiungi le nuove tracce alla playlist
+                            # Add new tracks to playlist
                             if tracks_to_add:
                                 current_tracks = existing_playlist.items()
                                 all_tracks = list(current_tracks) + tracks_to_add
                                 
-                                # Aggiorna la playlist con tutte le tracce (vecchie + nuove)
+                                # Update playlist with all tracks (old + new)
                                 existing_playlist.clear()
                                 existing_playlist.addItems(all_tracks)
                                 
-                                logger.info(f"🎉 Playlist '{playlist_title}' aggiornata con {len(tracks_to_add)} nuove tracce")
+                                logger.info(f"🎉 Playlist '{playlist_title}' updated with {len(tracks_to_add)} new tracks")
                                 updated_count += 1
                             else:
-                                logger.info(f"⚠️ Nessuna nuova traccia trovata su Plex per '{playlist_title}'")
+                                logger.info(f"⚠️ No new tracks found on Plex for '{playlist_title}'")
                         else:
-                            logger.warning(f"❌ Playlist '{playlist_title}' non trovata su Plex per utente {user_type}")
+                            logger.warning(f"❌ Playlist '{playlist_title}' not found on Plex for user {user_type}")
                             
                     except Exception as playlist_error:
-                        logger.error(f"Errore aggiornamento playlist '{playlist_title}' per utente {user_type}: {playlist_error}")
+                        logger.error(f"Error updating playlist '{playlist_title}' for user {user_type}: {playlist_error}")
                         continue
         
         if updated_count > 0:
-            logger.info(f"✅ Auto-aggiornamento completato: {updated_count} playlist AI aggiornate")
+            logger.info(f"✅ Auto-update completed: {updated_count} AI playlists updated")
         else:
-            logger.info("ℹ️ Nessuna playlist AI necessitava aggiornamenti")
+            logger.info("ℹ️ No AI playlists needed updates")
             
     except Exception as e:
-        logger.error(f"Errore durante auto-aggiornamento playlist AI: {e}", exc_info=True)
+        logger.error(f"Error during AI playlists auto-update: {e}", exc_info=True)

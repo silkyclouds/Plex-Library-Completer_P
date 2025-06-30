@@ -1,6 +1,6 @@
 """
-Gestione delle playlist AI settimanali con persistenza JSON.
-Legge le playlist NO_DELETE per analizzare i gusti dell'utente e genera playlist settimanali.
+Weekly AI playlist management with JSON persistence.
+Reads NO_DELETE playlists to analyze user taste and generates weekly playlists.
 """
 
 import os
@@ -15,41 +15,48 @@ from .gemini_ai import configure_gemini, generate_playlist_prompt, get_gemini_pl
 from .helperClasses import Playlist as PlexPlaylist, Track as PlexTrack, UserInputs
 from .plex import update_or_create_plex_playlist
 from .database import get_library_index_stats
+from .i18n import i18n, translate_log_message
 
 logger = logging.getLogger(__name__)
+
+def log_translated(level, message_key, *args, **kwargs):
+    """Helper for translated logs"""
+    current_lang = i18n.get_language()
+    translated_msg = i18n.get_translation(message_key, current_lang, **kwargs)
+    getattr(logger, level)(translated_msg)
 
 # Path per la persistenza JSON
 WEEKLY_AI_STATE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "state_data")
 WEEKLY_AI_STATE_FILE = os.path.join(WEEKLY_AI_STATE_DIR, "weekly_ai_playlists.json")
 
 def ensure_state_directory():
-    """Assicura che la directory state_data esista."""
+    """Ensures that the state_data directory exists."""
     os.makedirs(WEEKLY_AI_STATE_DIR, exist_ok=True)
 
 def load_weekly_ai_state() -> Dict:
-    """Carica lo stato delle playlist AI settimanali dal JSON."""
+    """Loads weekly AI playlists state from JSON."""
     ensure_state_directory()
     try:
         if os.path.exists(WEEKLY_AI_STATE_FILE):
             with open(WEEKLY_AI_STATE_FILE, 'r', encoding='utf-8') as f:
                 return json.load(f)
     except Exception as e:
-        logger.error(f"Errore nel caricamento stato AI settimanale: {e}")
+        logger.error(f"Error loading weekly AI state: {e}")
     
     return {"playlists": {}, "last_update": None}
 
 def save_weekly_ai_state(state: Dict):
-    """Salva lo stato delle playlist AI settimanali nel JSON."""
+    """Saves weekly AI playlists state to JSON."""
     ensure_state_directory()
     try:
         with open(WEEKLY_AI_STATE_FILE, 'w', encoding='utf-8') as f:
             json.dump(state, f, indent=2, ensure_ascii=False)
-        logger.info("Stato AI settimanale salvato con successo")
+        logger.info("Weekly AI state saved successfully")
     except Exception as e:
-        logger.error(f"Errore nel salvataggio stato AI settimanale: {e}")
+        logger.error(f"Error saving weekly AI state: {e}")
 
 def get_current_week_info() -> Dict[str, int]:
-    """Restituisce informazioni sulla settimana corrente."""
+    """Returns information about the current week."""
     now = datetime.now()
     year, week_num, _ = now.isocalendar()
     return {"year": year, "week": week_num}
@@ -60,7 +67,7 @@ def read_no_delete_playlist_for_taste_analysis(plex: PlexServer, favorites_playl
     IMPORTANTE: Questa funzione è SOLO LETTURA, non modifica la playlist.
     """
     if not favorites_playlist_id:
-        logger.warning("Nessun ID per la playlist dei preferiti fornito per analisi gusti.")
+        logger.warning("No favorites playlist ID provided for taste analysis.")
         return None
     
     try:
@@ -69,9 +76,9 @@ def read_no_delete_playlist_for_taste_analysis(plex: PlexServer, favorites_playl
         # Verifica che sia una playlist protetta
         preserve_tag = os.getenv("PRESERVE_TAG", "NO_DELETE")
         if preserve_tag.lower() not in playlist.title.lower():
-            logger.warning(f"⚠️ Playlist '{playlist.title}' non contiene tag '{preserve_tag}' - potrebbe non essere protetta")
+            logger.warning(f"⚠️ Playlist '{playlist.title}' does not contain tag '{preserve_tag}' - might not be protected")
         
-        logger.info(f"📖 Lettura playlist protetta '{playlist.title}' per analisi gusti (SOLO LETTURA)")
+        logger.info(f"📖 Reading protected playlist '{playlist.title}' for taste analysis (READ ONLY)")
         
         # Estrae le tracce per l'analisi dei gusti
         tracks = []
@@ -81,38 +88,38 @@ def read_no_delete_playlist_for_taste_analysis(plex: PlexServer, favorites_playl
                 title = track.title
                 tracks.append(f"{artist} - {title}")
             except Exception as track_error:
-                logger.debug(f"Errore lettura traccia: {track_error}")
+                logger.debug(f"Error reading track: {track_error}")
                 continue
         
-        logger.info(f"✅ Analizzate {len(tracks)} tracce da playlist protetta '{playlist.title}'")
+        logger.info(f"✅ Analyzed {len(tracks)} tracks from protected playlist '{playlist.title}'")
         return tracks
         
     except NotFound:
-        logger.error(f"❌ Playlist con ID '{favorites_playlist_id}' non trovata sul server Plex")
+        logger.error(f"❌ Playlist with ID '{favorites_playlist_id}' not found on Plex server")
         return None
     except Exception as e:
-        logger.error(f"❌ Errore lettura playlist protetta con ID '{favorites_playlist_id}': {e}")
+        logger.error(f"❌ Error reading protected playlist with ID '{favorites_playlist_id}': {e}")
         return None
 
 def should_update_weekly_playlist(current_week_info: Dict, state: Dict, user_key: str) -> bool:
-    """Determina se la playlist settimanale deve essere aggiornata."""
+    """Determines if the weekly playlist should be updated."""
     user_playlist_key = f"{user_key}_weekly"
     
-    # Se non esiste ancora una playlist per questo utente
+    # If no playlist exists for this user yet
     if user_playlist_key not in state["playlists"]:
-        logger.info(f"🆕 Prima creazione playlist settimanale per utente '{user_key}'")
+        logger.info(f"🆕 First weekly playlist creation for user '{user_key}'")
         return True
     
-    # Controlla se siamo in una nuova settimana
+    # Check if we're in a new week
     last_playlist = state["playlists"][user_playlist_key]
     last_week = last_playlist.get("week_info", {})
     
     if (current_week_info["year"] != last_week.get("year") or 
         current_week_info["week"] != last_week.get("week")):
-        logger.info(f"🗓️ Nuova settimana rilevata per '{user_key}': Settimana {current_week_info['week']}, Anno {current_week_info['year']}")
+        logger.info(f"🗓️ New week detected for '{user_key}': Week {current_week_info['week']}, Year {current_week_info['year']}")
         return True
     
-    logger.info(f"⏭️ Stessa settimana per '{user_key}': Settimana {current_week_info['week']}, Anno {current_week_info['year']}")
+    logger.info(f"⏭️ Same week for '{user_key}': Week {current_week_info['week']}, Year {current_week_info['year']}")
     return False
 
 def recreate_playlist_from_state(
@@ -121,8 +128,8 @@ def recreate_playlist_from_state(
     playlist_data: Dict,
     user_key: str
 ) -> Optional[object]:
-    """Ricrea una playlist identica utilizzando i dati salvati nello stato JSON."""
-    logger.info(f"🔄 Ricreazione playlist identica da stato JSON per '{user_key}'")
+    """Recreates an identical playlist using data saved in JSON state."""
+    logger.info(f"🔄 Recreating identical playlist from JSON state for '{user_key}'")
     
     try:
         # Crea oggetto playlist
@@ -144,20 +151,20 @@ def recreate_playlist_from_state(
             )
             tracks.append(track)
         
-        logger.info(f"🎵 Ricreazione playlist '{playlist_data['name']}' con {len(tracks)} tracce salvate")
+        logger.info(f"🎵 Recreating playlist '{playlist_data['name']}' with {len(tracks)} saved tracks")
         
         # Crea/aggiorna la playlist su Plex
         created_playlist = update_or_create_plex_playlist(plex, playlist_obj, tracks, user_inputs)
         
         if created_playlist:
-            logger.info(f"✅ Playlist '{playlist_data['name']}' ricreata con successo da stato JSON")
+            logger.info(f"✅ Playlist '{playlist_data['name']}' recreated successfully from JSON state")
             return created_playlist
         else:
-            logger.error(f"❌ Fallimento ricreazione playlist '{playlist_data['name']}' da stato JSON")
+            logger.error(f"❌ Failed to recreate playlist '{playlist_data['name']}' from JSON state")
             return None
             
     except Exception as e:
-        logger.error(f"❌ Errore ricreazione playlist da stato JSON: {e}")
+        logger.error(f"❌ Error recreating playlist from JSON state: {e}")
         return None
 
 def create_new_weekly_playlist(
@@ -168,43 +175,58 @@ def create_new_weekly_playlist(
     current_week_info: Dict,
     previous_week_tracks: Optional[List[Dict]] = None
 ) -> Optional[Dict]:
-    """Crea una nuova playlist settimanale usando Gemini AI."""
-    logger.info(f"🎨 Creazione nuova playlist settimanale AI per '{user_key}' - Settimana {current_week_info['week']}")
+    """Creates a new weekly playlist using Gemini AI."""
+    logger.info(f"🎨 Creating new weekly AI playlist for '{user_key}' - Week {current_week_info['week']}")
     
     # Configura Gemini
     model = configure_gemini()
     if not model:
-        logger.error("❌ Gemini non configurato, impossibile creare playlist AI")
+        logger.error("❌ Gemini not configured, cannot create AI playlist")
         return None
     
-    # Legge i gusti dell'utente dalla playlist NO_DELETE (SOLO LETTURA)
+    # Read user taste from NO_DELETE playlist (READ ONLY)
     favorite_tracks = read_no_delete_playlist_for_taste_analysis(plex, favorites_playlist_id)
     if not favorite_tracks:
-        logger.error("❌ Impossibile leggere playlist preferiti per analisi gusti")
+        logger.error("❌ Unable to read favorites playlist for taste analysis")
         return None
     
-    # Genera prompt per nuova playlist settimanale con dati aggiornati
+    # Get current language
+    current_language = i18n.get_language()
+    
+    # Generate localized prompt for new weekly playlist
+    if current_language == 'en':
+        custom_prompt_text = f"Create a weekly playlist of 25 tracks for week {current_week_info['week']} of year {current_week_info['year']}. " \
+                           f"Base it on user preferences but add variety and novelty to make this specific week interesting. " \
+                           f"Include some tracks from current charts to keep the playlist up-to-date."
+    else:
+        custom_prompt_text = f"Crea una playlist settimanale di 25 brani per la settimana {current_week_info['week']} dell'anno {current_week_info['year']}. " \
+                           f"Basati sui gusti dell'utente ma aggiungi varietà e novità per rendere interessante questa settimana specifica. " \
+                           f"Includi alcuni brani dalle classifiche attuali per mantenere la playlist aggiornata."
+    
+    # Generate prompt for new weekly playlist with updated data
     prompt = generate_playlist_prompt(
         favorite_tracks,
-        custom_prompt=f"Crea una playlist settimanale di 25 brani per la settimana {current_week_info['week']} dell'anno {current_week_info['year']}. "
-                     f"Basati sui gusti dell'utente ma aggiungi varietà e novità per rendere interessante questa settimana specifica. "
-                     f"Includi alcuni brani dalle classifiche attuali per mantenere la playlist aggiornata.",
+        custom_prompt=custom_prompt_text,
         previous_week_tracks=previous_week_tracks,
-        include_charts_data=True
+        include_charts_data=True,
+        language=current_language
     )
     
-    # Richiesta a Gemini
+    # Request to Gemini
     playlist_data = get_gemini_playlist_data(model, prompt)
     if not playlist_data:
-        logger.error("❌ Gemini non ha restituito dati validi per la playlist")
+        logger.error("❌ Gemini did not return valid playlist data")
         return None
     
-    # Aggiunge suffisso settimanale al nome
+    # Add localized weekly suffix to name
     original_name = playlist_data["playlist_name"]
-    weekly_name = f"{original_name} - Settimana {current_week_info['week']}"
+    if current_language == 'en':
+        weekly_name = f"{original_name} - Week {current_week_info['week']}"
+    else:
+        weekly_name = f"{original_name} - Settimana {current_week_info['week']}"
     playlist_data["playlist_name"] = weekly_name
     
-    # Crea oggetti Plex
+    # Create Plex objects
     playlist_obj = PlexPlaylist(
         id=None,
         name=weekly_name,
@@ -222,11 +244,11 @@ def create_new_weekly_playlist(
         )
         tracks.append(track)
     
-    # Crea la playlist su Plex
+    # Create playlist on Plex
     created_playlist = update_or_create_plex_playlist(plex, playlist_obj, tracks, user_inputs)
     
     if created_playlist:
-        # Prepara dati per il salvataggio nello stato
+        # Prepare data for state saving
         state_data = {
             "name": weekly_name,
             "description": playlist_data.get("description", ""),
@@ -236,10 +258,10 @@ def create_new_weekly_playlist(
             "plex_rating_key": created_playlist.ratingKey
         }
         
-        logger.info(f"✅ Playlist settimanale '{weekly_name}' creata con successo")
+        logger.info(f"✅ Weekly playlist '{weekly_name}' created successfully")
         return state_data
     else:
-        logger.error(f"❌ Fallimento creazione playlist settimanale '{weekly_name}'")
+        logger.error(f"❌ Failed to create weekly playlist '{weekly_name}'")
         return None
 
 def manage_weekly_ai_playlist(
@@ -249,20 +271,20 @@ def manage_weekly_ai_playlist(
     user_key: str
 ) -> bool:
     """
-    Gestisce la playlist AI settimanale per un utente:
-    - Crea nuova playlist se è una nuova settimana
-    - Ricrea playlist esistente se siamo nella stessa settimana
+    Manages weekly AI playlist for a user:
+    - Creates new playlist if it's a new week
+    - Recreates existing playlist if we're in the same week
     """
-    logger.info(f"🤖 Gestione playlist AI settimanale per utente '{user_key}'")
+    logger.info(f"🤖 Managing weekly AI playlist for user '{user_key}'")
     
-    # Controllo stato indice libreria
+    # Check library index status
     index_stats = get_library_index_stats()
     if index_stats['total_tracks_indexed'] == 0:
-        logger.error(f"❌ Indice libreria Plex VUOTO! ({index_stats['total_tracks_indexed']} tracce indicizzate)")
-        logger.error(f"⚠️ Playlist AI falliranno - esegui prima 'Indicizza Libreria' dalla homepage")
+        logger.error(f"❌ Plex library index EMPTY! ({index_stats['total_tracks_indexed']} tracks indexed)")
+        logger.error(f"⚠️ AI playlists will fail - run 'Index Library' from homepage first")
         return False
     else:
-        logger.info(f"✅ Indice libreria: {index_stats['total_tracks_indexed']} tracce indicizzate")
+        logger.info(f"✅ Library index: {index_stats['total_tracks_indexed']} tracks indexed")
     
     current_week_info = get_current_week_info()
     state = load_weekly_ai_state()
@@ -270,21 +292,21 @@ def manage_weekly_ai_playlist(
     
     try:
         if should_update_weekly_playlist(current_week_info, state, user_key):
-            # NUOVA SETTIMANA: Crea playlist completamente nuova
+            # NEW WEEK: Create completely new playlist
             
-            # Recupera tracce della settimana precedente per continuità
+            # Retrieve previous week tracks for continuity
             previous_week_tracks = None
             if user_playlist_key in state["playlists"]:
                 previous_week_tracks = state["playlists"][user_playlist_key].get("tracks", [])
             
-            # Crea nuova playlist
+            # Create new playlist
             new_playlist_data = create_new_weekly_playlist(
                 plex, user_inputs, favorites_playlist_id, user_key, 
                 current_week_info, previous_week_tracks
             )
             
             if new_playlist_data:
-                # Salva nel stato
+                # Save to state
                 state["playlists"][user_playlist_key] = new_playlist_data
                 state["last_update"] = datetime.now().isoformat()
                 save_weekly_ai_state(state)
@@ -293,7 +315,7 @@ def manage_weekly_ai_playlist(
                 return False
                 
         else:
-            # STESSA SETTIMANA: Ricrea playlist identica da JSON
+            # SAME WEEK: Recreate identical playlist from JSON
             if user_playlist_key in state["playlists"]:
                 playlist_data = state["playlists"][user_playlist_key]
                 recreated_playlist = recreate_playlist_from_state(
@@ -301,9 +323,9 @@ def manage_weekly_ai_playlist(
                 )
                 return recreated_playlist is not None
             else:
-                logger.warning(f"⚠️ Nessun dato salvato per playlist settimanale di '{user_key}'")
+                logger.warning(f"⚠️ No saved data for weekly playlist of '{user_key}'")
                 return False
                 
     except Exception as e:
-        logger.error(f"❌ Errore gestione playlist AI settimanale per '{user_key}': {e}")
+        logger.error(f"❌ Error managing weekly AI playlist for '{user_key}': {e}")
         return False

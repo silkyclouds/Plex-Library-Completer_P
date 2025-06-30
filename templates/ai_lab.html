@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Laboratorio AI{% endblock %}
+{% block title %}{{ _('ai_lab.title') }}{% endblock %}
 
 {% block extra_style %}
 .ai-preset-card {
@@ -176,8 +176,8 @@
         </div>
     </div>
     <div>
-        <h1 class="mb-2" style="font-size: 2.5rem; font-weight: 700;">Laboratorio AI</h1>
-        <p class="text-secondary mb-0">Crea playlist intelligenti con l'aiuto dell'intelligenza artificiale</p>
+        <h1 class="mb-2" style="font-size: 2.5rem; font-weight: 700;">{{ _('ai_lab.title') }}</h1>
+        <p class="text-secondary mb-0">{{ _('ai_lab.subtitle') }}</p>
     </div>
 </div>
 
@@ -187,7 +187,7 @@
         <form class="d-flex align-items-center gap-3" id="user-filter-form" method="get" action="{{ url_for('ai_lab') }}">
             <div class="d-flex align-items-center">
                 <i data-lucide="user" class="me-2" style="width: 20px; height: 20px; color: var(--spotify-green);"></i>
-                <label for="user-select" class="form-label mb-0 fw-medium">Genera playlist per:</label>
+                <label for="user-select" class="form-label mb-0 fw-medium">{{ _('ai_lab.generate_for') }}:</label>
             </div>
             <select name="user" id="user-select" class="form-select" style="max-width: 200px;" onchange="this.form.submit()">
                 <option value="main" {% if selected_user == 'main' %}selected{% endif %}>{{ aliases.main }}</option>
@@ -204,9 +204,9 @@
             <div class="card-body">
                 <div class="d-flex align-items-center mb-3">
                     <i data-lucide="sparkles" class="me-3" style="width: 24px; height: 24px; color: var(--accent-yellow);"></i>
-                    <h3 class="card-title mb-0">Preset Intelligenti</h3>
+                    <h3 class="card-title mb-0">{{ _('ai_lab.preset_title') }}</h3>
                 </div>
-                <p class="text-secondary small mb-4">Scegli un template predefinito o personalizza il tuo prompt</p>
+                <p class="text-secondary small mb-4">{{ _('ai_lab.quick_presets_desc') }}</p>
                 
                 <!-- Mood Presets -->
                 <div class="mb-4">
@@ -216,76 +216,76 @@
                             <div class="preset-icon">
                                 <i data-lucide="zap" style="width: 24px; height: 24px;"></i>
                             </div>
-                            <h6 class="fw-bold mb-2">Energia & Workout</h6>
-                            <p class="text-secondary small mb-0">Brani energici per sport e attività</p>
+                            <h6 class="fw-bold mb-2">{{ _('ai_lab.presets.workout.title') }}</h6>
+                            <p class="text-secondary small mb-0">{{ _('ai_lab.presets.workout.description') }}</p>
                         </div>
                         
                         <div class="ai-preset-card" data-preset="relax" data-category="mood">
                             <div class="preset-icon">
                                 <i data-lucide="moon" style="width: 24px; height: 24px;"></i>
                             </div>
-                            <h6 class="fw-bold mb-2">Relax & Chill</h6>
-                            <p class="text-secondary small mb-0">Musica rilassante per meditazione</p>
+                            <h6 class="fw-bold mb-2">{{ _('ai_lab.presets.chill.title') }}</h6>
+                            <p class="text-secondary small mb-0">{{ _('ai_lab.presets.chill.description') }}</p>
                         </div>
                         
                         <div class="ai-preset-card" data-preset="party" data-category="mood">
                             <div class="preset-icon">
                                 <i data-lucide="party-popper" style="width: 24px; height: 24px;"></i>
                             </div>
-                            <h6 class="fw-bold mb-2">Party & Festa</h6>
-                            <p class="text-secondary small mb-0">Hit dancefloor per feste</p>
+                            <h6 class="fw-bold mb-2">{{ _('ai_lab.presets.party.title') }}</h6>
+                            <p class="text-secondary small mb-0">{{ _('ai_lab.presets.party.description') }}</p>
                         </div>
                     </div>
                 </div>
                 
                 <!-- Genre Presets -->
                 <div class="mb-4">
-                    <h6 class="text-uppercase fw-bold mb-3" style="color: var(--accent-purple); font-size: 0.75rem; letter-spacing: 1px;">🎸 GENERI</h6>
+                    <h6 class="text-uppercase fw-bold mb-3" style="color: var(--accent-purple); font-size: 0.75rem; letter-spacing: 1px;">🎸 {% if current_language == 'en' %}GENRES{% else %}GENERI{% endif %}</h6>
                     <div class="preset-category">
                         <div class="ai-preset-card" data-preset="rock-classics" data-category="genre">
                             <div class="preset-icon">
                                 <i data-lucide="guitar" style="width: 24px; height: 24px;"></i>
                             </div>
-                            <h6 class="fw-bold mb-2">Rock Classico</h6>
-                            <p class="text-secondary small mb-0">I grandi classici del rock</p>
+                            <h6 class="fw-bold mb-2">{{ _('ai_lab.genres.rock_classic') }}</h6>
+                            <p class="text-secondary small mb-0">{{ _('ai_lab.genres.rock_classic_desc') }}</p>
                         </div>
                         
                         <div class="ai-preset-card" data-preset="italian-music" data-category="genre">
                             <div class="preset-icon">
                                 <i data-lucide="heart" style="width: 24px; height: 24px;"></i>
                             </div>
-                            <h6 class="fw-bold mb-2">Musica Italiana</h6>
-                            <p class="text-secondary small mb-0">Il meglio della canzone italiana</p>
+                            <h6 class="fw-bold mb-2">{{ _('ai_lab.genres.italian_music') }}</h6>
+                            <p class="text-secondary small mb-0">{{ _('ai_lab.genres.italian_music_desc') }}</p>
                         </div>
                         
                         <div class="ai-preset-card" data-preset="electronic" data-category="genre">
                             <div class="preset-icon">
                                 <i data-lucide="radio" style="width: 24px; height: 24px;"></i>
                             </div>
-                            <h6 class="fw-bold mb-2">Electronic & EDM</h6>
-                            <p class="text-secondary small mb-0">Musica elettronica e dance</p>
+                            <h6 class="fw-bold mb-2">{{ _('ai_lab.genres.electronic_edm') }}</h6>
+                            <p class="text-secondary small mb-0">{{ _('ai_lab.genres.electronic_edm_desc') }}</p>
                         </div>
                     </div>
                 </div>
                 
                 <!-- Era Presets -->
                 <div class="mb-3">
-                    <h6 class="text-uppercase fw-bold mb-3" style="color: var(--accent-red); font-size: 0.75rem; letter-spacing: 1px;">📅 EPOCHE</h6>
+                    <h6 class="text-uppercase fw-bold mb-3" style="color: var(--accent-red); font-size: 0.75rem; letter-spacing: 1px;">📅 {% if current_language == 'en' %}ERAS{% else %}EPOCHE{% endif %}</h6>
                     <div class="preset-category">
                         <div class="ai-preset-card" data-preset="80s-90s" data-category="era">
                             <div class="preset-icon">
                                 <i data-lucide="rewind" style="width: 24px; height: 24px;"></i>
                             </div>
-                            <h6 class="fw-bold mb-2">Anni '80 - '90</h6>
-                            <p class="text-secondary small mb-0">Nostalgia musicale</p>
+                            <h6 class="fw-bold mb-2">{{ _('ai_lab.eras.80s_90s') }}</h6>
+                            <p class="text-secondary small mb-0">{{ _('ai_lab.eras.80s_90s_desc') }}</p>
                         </div>
                         
                         <div class="ai-preset-card" data-preset="2000s" data-category="era">
                             <div class="preset-icon">
                                 <i data-lucide="cd" style="width: 24px; height: 24px;"></i>
                             </div>
-                            <h6 class="fw-bold mb-2">Anni 2000</h6>
-                            <p class="text-secondary small mb-0">I hits del nuovo millennio</p>
+                            <h6 class="fw-bold mb-2">{{ _('ai_lab.eras.2000s') }}</h6>
+                            <p class="text-secondary small mb-0">{{ _('ai_lab.eras.2000s_desc') }}</p>
                         </div>
                     </div>
                 </div>
@@ -299,7 +299,7 @@
             <div class="card-body d-flex flex-column">
                 <div class="d-flex align-items-center mb-3">
                     <i data-lucide="message-circle" class="me-3" style="width: 24px; height: 24px; color: var(--spotify-green);"></i>
-                    <h3 class="card-title mb-0">Generatore AI</h3>
+                    <h3 class="card-title mb-0">{{ _('ai_lab.ai_generator') }}</h3>
                 </div>
                 
                 <!-- Chat History -->
@@ -307,16 +307,16 @@
                     <div class="chat-message assistant">
                         <div class="d-flex align-items-center mb-2">
                             <i data-lucide="bot" class="me-2" style="width: 16px; height: 16px;"></i>
-                            <strong>AI Assistant</strong>
+                            <strong>{{ _('ai.bot_messages.ai_assistant') }}</strong>
                         </div>
-                        <p class="mb-0">Ciao! Sono qui per aiutarti a creare playlist personalizzate. Puoi scegliere un preset o descrivimi esattamente cosa cerchi.</p>
-                        <div class="timestamp">Ora</div>
+                        <p class="mb-0">{{ _('ai.bot_messages.greeting') }}</p>
+                        <div class="timestamp">{{ _('ai.bot_messages.now') }}</div>
                     </div>
                 </div>
                 
                 <!-- Suggestion Pills -->
                 <div class="mb-3" id="suggestionPills" style="display: none;">
-                    <small class="text-secondary d-block mb-2">💡 Prova queste idee:</small>
+                    <small class="text-secondary d-block mb-2">{{ _('ai.bot_messages.suggestions_prompt') }}</small>
                     <div class="suggestions-container"></div>
                 </div>
                 
@@ -324,21 +324,30 @@
                 <form action="{{ url_for('ai_lab', user=selected_user) }}" method="post" id="promptForm">
                     <div class="prompt-input-container mb-3">
                         <textarea id="custom_prompt" name="custom_prompt" rows="3" class="form-control" 
-                                  placeholder="Descrivi la playlist che desideri... (es: playlist energica per correre con rock anni 90)"
+                                  placeholder="{% if current_language == 'en' %}Describe the playlist you want... (e.g., energetic playlist for running with 90s rock){% else %}Descrivi la playlist che desideri... (es: playlist energica per correre con rock anni 90){% endif %}"
                                   style="resize: none;"></textarea>
                         <div class="prompt-suggestions" id="promptSuggestions"></div>
                     </div>
                     
                     <!-- Quick Modifiers -->
                     <div class="mb-3">
-                        <small class="text-secondary d-block mb-2">🎛️ Personalizza:</small>
+                        <small class="text-secondary d-block mb-2">{{ _('ai.bot_messages.customization_prompt') }}</small>
                         <div class="d-flex flex-wrap gap-1" id="modifierPills">
-                            <span class="suggestion-pill" data-modifier="20 brani">20 brani</span>
-                            <span class="suggestion-pill" data-modifier="30 brani">30 brani</span>
-                            <span class="suggestion-pill" data-modifier="1 ora">1 ora</span>
-                            <span class="suggestion-pill" data-modifier="solo hit">solo hit</span>
-                            <span class="suggestion-pill" data-modifier="brani famosi">brani famosi</span>
-                            <span class="suggestion-pill" data-modifier="underground">underground</span>
+                            {% if current_language == 'en' %}
+                                <span class="suggestion-pill" data-modifier="20 tracks">20 tracks</span>
+                                <span class="suggestion-pill" data-modifier="30 tracks">30 tracks</span>
+                                <span class="suggestion-pill" data-modifier="1 hour">1 hour</span>
+                                <span class="suggestion-pill" data-modifier="only hits">only hits</span>
+                                <span class="suggestion-pill" data-modifier="famous songs">famous songs</span>
+                                <span class="suggestion-pill" data-modifier="underground">underground</span>
+                            {% else %}
+                                <span class="suggestion-pill" data-modifier="20 brani">20 brani</span>
+                                <span class="suggestion-pill" data-modifier="30 brani">30 brani</span>
+                                <span class="suggestion-pill" data-modifier="1 ora">1 ora</span>
+                                <span class="suggestion-pill" data-modifier="solo hit">solo hit</span>
+                                <span class="suggestion-pill" data-modifier="brani famosi">brani famosi</span>
+                                <span class="suggestion-pill" data-modifier="underground">underground</span>
+                            {% endif %}
                         </div>
                     </div>
                     
@@ -348,18 +357,18 @@
                             <input class="form-check-input" type="checkbox" id="include_charts" name="include_charts" checked>
                             <label class="form-check-label" for="include_charts">
                                 <i data-lucide="trending-up" class="me-1" style="width: 16px; height: 16px; color: var(--spotify-green);"></i>
-                                <strong>Includi classifiche aggiornate</strong>
+                                <strong>{{ _('ai.bot_messages.charts_integration') }}</strong>
                             </label>
                         </div>
-                        <small class="text-muted">Gemini userà dati di Billboard, Spotify e classifiche italiane per suggerimenti attuali</small>
+                        <small class="text-muted">{{ _('ai.bot_messages.charts_description') }}</small>
                         <div class="mt-2">
                             <button type="button" class="btn btn-sm btn-outline-info" id="previewChartsBtn">
                                 <i data-lucide="eye" style="width: 14px; height: 14px;"></i>
-                                Anteprima Classifiche
+                                {{ _('ai.bot_messages.preview_charts') }}
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-success" id="testChartsBtn">
                                 <i data-lucide="check-circle" style="width: 14px; height: 14px;"></i>
-                                Test Integrazione
+                                {{ _('ai.bot_messages.test_integration') }}
                             </button>
                         </div>
                     </div>
@@ -372,8 +381,8 @@
                                     <span class="visually-hidden">Loading...</span>
                                 </div>
                                 <div>
-                                    <div class="fw-bold" id="progressTitle">Generazione in corso...</div>
-                                    <small id="progressMessage">Avvio processo AI...</small>
+                                    <div class="fw-bold" id="progressTitle">{{ _('ai.bot_messages.generating_progress') }}</div>
+                                    <small id="progressMessage">{{ _('ai.bot_messages.starting_ai') }}</small>
                                 </div>
                             </div>
                             <div class="progress mt-2" style="height: 6px;">
@@ -384,7 +393,7 @@
                     
                     <button type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-center" id="generateBtn">
                         <i data-lucide="sparkles" class="me-2" style="width: 18px; height: 18px;"></i>
-                        Genera Playlist con AI
+                        {{ _('ai.bot_messages.generate_button') }}
                     </button>
                 </form>
             </div>
@@ -398,7 +407,7 @@
                 <div class="d-flex align-items-center justify-content-between mb-3">
                     <div class="d-flex align-items-center">
                         <i data-lucide="list-music" class="me-3" style="width: 24px; height: 24px; color: var(--accent-blue);"></i>
-                        <h3 class="card-title mb-0">Playlist Create</h3>
+                        <h3 class="card-title mb-0">{{ _('ai.bot_messages.playlists_created') }}</h3>
                     </div>
                     <span class="badge bg-info">{{ existing_playlists|length }}</span>
                 </div>
@@ -422,7 +431,7 @@
                                 </div>
                                 <form action="{{ url_for('delete_ai_playlist_route', playlist_db_id=playlist.id) }}" 
                                       method="post" 
-                                      onsubmit="return confirm('Sei sicuro di voler eliminare questa playlist?');"
+                                      onsubmit="return confirm('{{ _('ai.bot_messages.delete_confirm') }}');"
                                       class="d-inline">
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Elimina playlist">
                                         <i data-lucide="trash-2" style="width: 12px; height: 12px;"></i>
@@ -435,8 +444,8 @@
                 {% else %}
                     <div class="text-center py-4">
                         <i data-lucide="music" style="width: 48px; height: 48px; color: var(--text-muted);" class="mb-3"></i>
-                        <p class="text-secondary">Nessuna playlist AI ancora creata per questo utente.</p>
-                        <small class="text-muted">Le playlist generate appariranno qui!</small>
+                        <p class="text-secondary">{{ _('ai.bot_messages.no_playlists') }}</p>
+                        <small class="text-muted">{{ _('ai.bot_messages.playlists_appear_here') }}</small>
                     </div>
                 {% endif %}
             </div>

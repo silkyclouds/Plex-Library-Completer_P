@@ -10,22 +10,23 @@ import random
 from collections import Counter
 import re
 from datetime import datetime
+from .utils.i18n import get_i18n
 
-# Dimensione del campione da analizzare per le librerie molto grandi
+# Sample size to analyze for very large libraries
 SAMPLE_SIZE = 5000
 CACHE_DIR = "./state_data"
 CACHE_DURATION = 86400
 
-# Colori moderni per i grafici (Spotify-inspired)
+# Modern colors for charts (Spotify-inspired)
 SPOTIFY_COLORS = [
     '#1DB954', '#1ed760', '#1fdf64', '#FF6B6B', '#4ECDC4', 
     '#FFE66D', '#A8E6CF', '#FF8E53', '#6C5CE7', '#FD79A8',
     '#00B894', '#FDCB6E', '#E17055', '#74B9FF', '#A29BFE'
 ]
 
-# Mappping dei generi per normalizzazione
+# Genre mapping for normalization
 GENRE_MAPPING = {
-    # Rock e derivati
+    # Rock and derivatives
     'rock': 'Rock',
     'classic rock': 'Rock Classico', 
     'alternative rock': 'Rock Alternativo',
@@ -98,23 +99,26 @@ GENRE_MAPPING = {
     'ska': 'Ska'
 }
 
-def normalize_genre(genre_str):
-    """Normalizza i nomi dei generi per una migliore categorizzazione"""
-    if not genre_str or genre_str == "Sconosciuto":
-        return "Sconosciuto"
+def normalize_genre(genre_str, language='en'):
+    """Normalizes genre names for better categorization with language support"""
+    unknown_label = "Unknown" if language == 'en' else "Sconosciuto"
+    
+    if not genre_str or genre_str in ["Sconosciuto", "Unknown"]:
+        return unknown_label
     
     genre_lower = genre_str.lower().strip()
     
-    # Cerca corrispondenze esatte
+    # Search for exact matches
     if genre_lower in GENRE_MAPPING:
-        return GENRE_MAPPING[genre_lower]
+        mapped_value = GENRE_MAPPING[genre_lower]
+        return mapped_value.get(language, mapped_value['en']) if isinstance(mapped_value, dict) else mapped_value
     
-    # Cerca corrispondenze parziali
+    # Search for partial matches
     for key, value in GENRE_MAPPING.items():
         if key in genre_lower or genre_lower in key:
-            return value
+            return value.get(language, value['en']) if isinstance(value, dict) else value
     
-    # Se non trova corrispondenze, capitalizza il genere originale
+    # If no matches found, capitalize original genre
     return genre_str.title()
 
 def _extract_year(track) -> int | None:
@@ -154,32 +158,34 @@ def _extract_year(track) -> int | None:
     
     return None
 
-def _extract_genre(track) -> str:
-    """Return the first genre tag for a track or 'Sconosciuto'."""
-    # Prova prima con i generi dell'album (spesso più accurati)
+def _extract_genre(track, language='en') -> str:
+    """Return the first genre tag for a track or 'Unknown'/'Sconosciuto'."""
+    unknown_label = "Unknown" if language == 'en' else "Sconosciuto"
+    
+    # Try first with album genres (often more accurate)
     if hasattr(track, 'parentTitle'):
         try:
             album = track.album()
             if hasattr(album, 'genres') and album.genres:
                 album_genres = [g.tag for g in album.genres if hasattr(g, 'tag') and g.tag]
                 if album_genres:
-                    return normalize_genre(album_genres[0])
+                    return normalize_genre(album_genres[0], language)
         except:
             pass
     
-    # Poi generi della traccia
+    # Then track genres
     if hasattr(track, 'genres') and track.genres:
         track_genres = [g.tag for g in track.genres if hasattr(g, 'tag') and g.tag]
         if track_genres:
-            return normalize_genre(track_genres[0])
+            return normalize_genre(track_genres[0], language)
     
-    # Prova con i mood se non ci sono generi
+    # Try with moods if no genres
     if hasattr(track, 'moods') and track.moods:
         mood_tags = [m.tag for m in track.moods if hasattr(m, 'tag') and m.tag]
         if mood_tags:
-            return normalize_genre(mood_tags[0])
+            return normalize_genre(mood_tags[0], language)
 
-    return "Sconosciuto"
+    return unknown_label
 
 def _extract_additional_metadata(track):
     """Estrae metadati aggiuntivi per statistiche avanzate"""
@@ -208,7 +214,7 @@ def _extract_additional_metadata(track):
     # Artista e album
     data['artist'] = getattr(track, 'grandparentTitle', 'Sconosciuto')
     data['album'] = getattr(track, 'parentTitle', 'Sconosciuto')
-    data['title'] = getattr(track, 'title', 'Sconosciuto')
+    data['title'] = getattr(track, 'title', 'Unknown')
     
     # Play count se disponibile
     if hasattr(track, 'viewCount') and track.viewCount:
@@ -229,10 +235,10 @@ def _get_cache_path(playlist_id: str | None) -> str:
     return os.path.join(CACHE_DIR, f"stats_cache_v2_{name}.pkl")
 
 def get_plex_tracks_as_df(
-    plex: PlexServer, playlist_id: str | None, force_refresh: bool = False
+    plex: PlexServer, playlist_id: str | None, force_refresh: bool = False, language: str = 'en'
 ) -> pd.DataFrame:
     """
-    Recupera le tracce da Plex e le restituisce come DataFrame con metadati estesi.
+    Retrieves tracks from Plex and returns them as DataFrame with extended metadata.
     """
     target_object = None
     
@@ -240,9 +246,9 @@ def get_plex_tracks_as_df(
         try:
             playlist_rating_key = int(playlist_id)
             target_object = plex.fetchItem(playlist_rating_key)
-            logging.info(f"Trovata playlist '{target_object.title}' tramite ID: {playlist_id}")
+            logging.info(f"Found playlist '{target_object.title}' via ID: {playlist_id}")
         except Exception as e:
-            logging.error(f"Impossibile trovare la playlist con ID {playlist_id}. Errore: {e}")
+            logging.error(f"Unable to find playlist with ID {playlist_id}. Error: {e}")
             raise e
     else:
         target_object = plex.library.section('Musica')
@@ -253,10 +259,10 @@ def get_plex_tracks_as_df(
     if not force_refresh and os.path.exists(cache_path):
         file_age = time.time() - os.path.getmtime(cache_path)
         if file_age < CACHE_DURATION:
-            logging.info(f"Caricamento statistiche dalla cache: {cache_path}")
+            logging.info(f"Loading statistics from cache: {cache_path}")
             return pd.read_pickle(cache_path)
 
-    logging.info(f"Aggiornamento cache per '{target_object.title}'. Inizio recupero tracce...")
+    logging.info(f"Updating cache for '{target_object.title}'. Starting track retrieval...")
     
     # Usa metodo diverso per libreria vs playlist
     if hasattr(target_object, 'items'):
@@ -264,15 +270,15 @@ def get_plex_tracks_as_df(
     else:
         # Per MusicSection usa search per ottenere tracce specificatamente
         tracks = target_object.search(libtype='track')
-    logging.info(f"Recuperate {len(tracks)} tracce da '{target_object.title}'")
+    logging.info(f"Retrieved {len(tracks)} tracks from '{target_object.title}'")
     
     # Sampling intelligente per librerie grandi
     total_tracks = len(tracks) if hasattr(tracks, '__len__') else target_object.totalSize
     if not playlist_id and total_tracks > SAMPLE_SIZE:
-        logging.info(f"Libreria molto grande ({total_tracks} tracce). Analizzo un campione di {SAMPLE_SIZE} tracce.")
+        logging.info(f"Very large library ({total_tracks} tracks). Analyzing sample of {SAMPLE_SIZE} tracks.")
         tracks = random.sample(list(tracks), SAMPLE_SIZE)
     
-    logging.info(f"Iniziando analisi di {len(tracks)} tracce...")
+    logging.info(f"Starting analysis of {len(tracks)} tracks...")
 
     data = []
     track_count = 0
@@ -293,9 +299,9 @@ def get_plex_tracks_as_df(
             try:
                 track_data = {
                     "year": _extract_year(track), 
-                    "genre": _extract_genre(track)
+                    "genre": _extract_genre(track, language)
                 }
-                # Aggiungi metadati estesi
+                # Add extended metadata
                 track_data.update(_extract_additional_metadata(track))
                 data.append(track_data)
                 
@@ -304,13 +310,13 @@ def get_plex_tracks_as_df(
                     logging.info(f"Processata traccia {track_count}: '{track_data.get('title', 'N/A')}' - Anno: {track_data.get('year', 'N/A')}, Genere: {track_data.get('genre', 'N/A')}")
                     
             except Exception as e:
-                logging.warning(f"Errore nel processare la traccia {i} ('{getattr(track, 'title', 'N/A')}'): {e}")
+                logging.warning(f"Error processing track {i} ('{getattr(track, 'title', 'N/A')}'): {e}")
                 continue
         else:
             if track_count <= 5:  # Log solo i primi 5 elementi non traccia
-                logging.debug(f"Elemento {i} non è una traccia: tipo='{getattr(track, 'type', 'N/A')}', title='{getattr(track, 'title', 'N/A')}'")
+                logging.debug(f"Element {i} is not a track: type='{getattr(track, 'type', 'N/A')}', title='{getattr(track, 'title', 'N/A')}'")
     
-    logging.info(f"Elaborate {len(data)} tracce valide su {track_count} tracce musicali totali")
+    logging.info(f"Processed {len(data)} valid tracks out of {track_count} total music tracks")
     
     if not data:
         logging.warning("Nessuna traccia trovata da elaborare.")
@@ -318,35 +324,35 @@ def get_plex_tracks_as_df(
 
     df = pd.DataFrame(data)
     
-    # Pulizia e validazione dei dati - meno restrittiva
-    # Rimuovi solo tracce senza genere (year può essere None)
+    # Data cleaning and validation - less restrictive
+    # Remove only tracks without genre (year can be None)
     df = df.dropna(subset=['genre'])
     
-    # Filtra anni solo se sono presenti
+    # Filter years only if present
     if 'year' in df.columns:
-        # Sostituisci None con 0 per gli anni mancanti
+        # Replace None with 0 for missing years
         df['year'] = df['year'].fillna(0)
-        # Filtra solo anni esplicitamente invalidi (mantenendo 0 per "sconosciuto")
+        # Filter only explicitly invalid years (keeping 0 for "unknown")
         df = df[(df['year'] == 0) | ((df['year'] >= 1900) & (df['year'] <= datetime.now().year + 1))]
     
     os.makedirs(CACHE_DIR, exist_ok=True)
     df.to_pickle(cache_path)
-    logging.info(f"Cache aggiornata e salvata in: {cache_path} ({len(df)} tracce valide)")
+    logging.info(f"Cache updated and saved to: {cache_path} ({len(df)} valid tracks)")
     
     return df
 
-def generate_genre_pie_chart(df: pd.DataFrame):
-    """Genera un grafico a torta moderno con la distribuzione dei generi."""
-    logging.info("Inizio generazione grafico generi...")
+def generate_genre_pie_chart(df: pd.DataFrame, language='en'):
+    """Generates a modern pie chart with genre distribution."""
+    logging.info("Starting genre chart generation...")
     if df.empty or 'genre' not in df.columns:
-        return "<div class='alert alert-warning'>Nessun dato sui generi disponibile.</div>"
+        return "<div class='alert alert-warning'>No genre data available.</div>"
     
-    # Filtra "Sconosciuto", "Altri", "Vari" dai generi
+    # Filter "Unknown", "Other", "Various" from genres
     pattern = r'^(?:Sconosciuto|Altri|Vari|Unknown|N/A)$'
     df_filtered = df[~df['genre'].str.contains(pattern, case=False, na=False, regex=True)]
     
     if df_filtered.empty:
-        return "<div class='alert alert-warning'>Nessun dato sui generi valido disponibile.</div>"
+        return "<div class='alert alert-warning'>No valid genre data available.</div>"
     
     genre_counts = df_filtered['genre'].value_counts().nlargest(12).reset_index()
     genre_counts.columns = ['genre', 'count']
@@ -364,7 +370,7 @@ def generate_genre_pie_chart(df: pd.DataFrame):
         genre_counts, 
         values='count', 
         names='genre', 
-        title=f'Distribuzione Generi Musicali ({total_tracks:,} tracce)',
+        title=get_chart_title('genre_distribution', total_tracks, language),
         template='plotly_dark',
         color_discrete_sequence=SPOTIFY_COLORS
     )
@@ -372,7 +378,7 @@ def generate_genre_pie_chart(df: pd.DataFrame):
     fig.update_traces(
         textposition='inside', 
         textinfo='percent+label',
-        hovertemplate='<b>%{label}</b><br>Tracce: %{value:,}<br>Percentuale: %{percent}<extra></extra>'
+        hovertemplate=get_hover_template('genre', language)
     )
     
     fig.update_layout(
@@ -389,11 +395,11 @@ def generate_genre_pie_chart(df: pd.DataFrame):
         'responsive': True
     })
 
-def generate_decade_bar_chart(df: pd.DataFrame):
-    """Genera un grafico a barre moderno con la distribuzione per decennio."""
-    logging.info("Inizio generazione grafico decadi...")
+def generate_decade_bar_chart(df: pd.DataFrame, language='en'):
+    """Generates a modern bar chart with decade distribution."""
+    logging.info("Starting decade chart generation...")
     if df.empty or 'year' not in df.columns:
-        return "<div class='alert alert-warning'>Nessun dato sugli anni disponibile.</div>"
+        return "<div class='alert alert-warning'>No year data available.</div>"
     
     df_filtered = df.dropna(subset=['year']).copy()
     df_filtered['decade'] = (df_filtered['year'] // 10 * 10).astype(int)
@@ -411,7 +417,7 @@ def generate_decade_bar_chart(df: pd.DataFrame):
         decade_counts, 
         x='decade_label', 
         y='count',
-        title=f'Distribuzione Tracce per Decennio ({total_tracks:,} tracce)',
+        title=get_chart_title('decade_distribution', total_tracks, language),
         template='plotly_dark',
         labels={'decade_label': 'Decennio', 'count': 'Numero di Tracce'},
         color='count',
@@ -424,8 +430,8 @@ def generate_decade_bar_chart(df: pd.DataFrame):
     )
     
     fig.update_layout(
-        xaxis_title="Decennio",
-        yaxis_title="Numero di Tracce",
+        xaxis_title=get_axis_title('decade', language),
+        yaxis_title=get_axis_title('track_count', language),
         coloraxis_showscale=False,
         height=400,
         margin=dict(l=60, r=20, t=60, b=60)
@@ -437,7 +443,7 @@ def generate_decade_bar_chart(df: pd.DataFrame):
         'responsive': True
     })
 
-def generate_top_artists_chart(df: pd.DataFrame, top_n: int = 15):
+def generate_top_artists_chart(df: pd.DataFrame, top_n: int = 15, language='en'):
     """Genera un grafico con i top artisti."""
     if df.empty or 'artist' not in df.columns:
         return "<div class='alert alert-warning'>Nessun dato sugli artisti disponibile.</div>"
@@ -457,9 +463,9 @@ def generate_top_artists_chart(df: pd.DataFrame, top_n: int = 15):
         x='count',
         y='artist',
         orientation='h',
-        title=f'Top {top_n} Artisti per Numero di Tracce',
+        title=get_chart_title('top_artists', top_n, language),
         template='plotly_dark',
-        labels={'count': 'Numero di Tracce', 'artist': 'Artista'},
+        labels={'count': get_axis_title('track_count', language), 'artist': get_axis_title('artist', language)},
         color='count',
         color_continuous_scale='plasma'
     )
@@ -472,7 +478,7 @@ def generate_top_artists_chart(df: pd.DataFrame, top_n: int = 15):
     )
     
     fig.update_traces(
-        hovertemplate='<b>%{y}</b><br>Tracce: %{x:,}<extra></extra>'
+        hovertemplate=get_hover_template('top_artists', language)
     )
     
     return fig.to_html(full_html=False, include_plotlyjs='cdn', config={
@@ -481,7 +487,7 @@ def generate_top_artists_chart(df: pd.DataFrame, top_n: int = 15):
         'responsive': True
     })
 
-def generate_duration_distribution(df: pd.DataFrame):
+def generate_duration_distribution(df: pd.DataFrame, language='en'):
     """Genera un istogramma della distribuzione delle durate."""
     if df.empty or 'duration_minutes' not in df.columns:
         return "<div class='alert alert-warning'>Nessun dato sulla durata disponibile.</div>"
@@ -494,13 +500,13 @@ def generate_duration_distribution(df: pd.DataFrame):
         df_clean,
         x='duration_minutes',
         nbins=30,
-        title='Distribuzione Durata Tracce',
+        title=get_chart_title('duration_distribution', None, language),
         template='plotly_dark',
         labels={'duration_minutes': 'Durata (minuti)', 'count': 'Numero di Tracce'},
         color_discrete_sequence=['#1DB954']
     )
     
-    # Aggiungi linea della media
+    # Add average line
     mean_duration = df_clean['duration_minutes'].mean()
     fig.add_vline(
         x=mean_duration,
@@ -510,8 +516,8 @@ def generate_duration_distribution(df: pd.DataFrame):
     )
     
     fig.update_layout(
-        xaxis_title="Durata (minuti)",
-        yaxis_title="Numero di Tracce",
+        xaxis_title=get_axis_title('duration_minutes', language),
+        yaxis_title=get_axis_title('track_count', language),
         height=350
     )
     
@@ -521,10 +527,10 @@ def generate_duration_distribution(df: pd.DataFrame):
         'responsive': True
     })
 
-def generate_year_trend_chart(df: pd.DataFrame):
-    """Genera un grafico di trend per anno."""
+def generate_year_trend_chart(df: pd.DataFrame, language='en'):
+    """Generates a year trend chart."""
     if df.empty or 'year' not in df.columns:
-        return "<div class='alert alert-warning'>Nessun dato sugli anni disponibile.</div>"
+        return "<div class='alert alert-warning'>No year data available.</div>"
     
     df_filtered = df.dropna(subset=['year']).copy()
     df_filtered = df_filtered[df_filtered['year'] >= 1960]
@@ -536,16 +542,16 @@ def generate_year_trend_chart(df: pd.DataFrame):
         year_counts,
         x='year',
         y='count',
-        title='Trend Tracce per Anno',
+        title=get_chart_title('year_trend', None, language),
         template='plotly_dark',
-        labels={'year': 'Anno', 'count': 'Numero di Tracce'},
+        labels={'year': get_axis_title('year', language), 'count': get_axis_title('track_count', language)},
         line_shape='spline'
     )
     
     fig.update_traces(
         line_color='#1DB954',
         line_width=3,
-        hovertemplate='<b>Anno %{x}</b><br>Tracce: %{y:,}<extra></extra>'
+        hovertemplate=get_hover_template('year_trend', language)
     )
     
     fig.update_layout(
@@ -620,3 +626,70 @@ def get_library_statistics(df: pd.DataFrame):
             stats['top_decade_count'] = decades.value_counts().iloc[0]
     
     return stats
+
+def get_chart_title(chart_type, count_or_value, language='en'):
+    """Get translated chart titles."""
+    i18n = get_i18n()
+    
+    if chart_type == 'genre_distribution':
+        if language == 'en':
+            return f'Musical Genre Distribution ({count_or_value:,} tracks)'
+        else:
+            return f'Distribuzione Generi Musicali ({count_or_value:,} tracce)'
+    elif chart_type == 'decade_distribution':
+        if language == 'en':
+            return f'Track Distribution by Decade ({count_or_value:,} tracks)'
+        else:
+            return f'Distribuzione Tracce per Decennio ({count_or_value:,} tracce)'
+    elif chart_type == 'top_artists':
+        if language == 'en':
+            return f'Top {count_or_value} Artists by Track Count'
+        else:
+            return f'Top {count_or_value} Artisti per Numero di Tracce'
+    elif chart_type == 'duration_distribution':
+        if language == 'en':
+            return 'Track Duration Distribution'
+        else:
+            return 'Distribuzione Durata Tracce'
+    elif chart_type == 'year_trend':
+        if language == 'en':
+            return 'Track Trend by Year'
+        else:
+            return 'Trend Tracce per Anno'
+    
+    return chart_type
+
+def get_axis_title(axis_type, language='en'):
+    """Get translated axis titles."""
+    if axis_type == 'decade':
+        return 'Decade' if language == 'en' else 'Decennio'
+    elif axis_type == 'track_count':
+        return 'Number of Tracks' if language == 'en' else 'Numero di Tracce'
+    elif axis_type == 'duration_minutes':
+        return 'Duration (minutes)' if language == 'en' else 'Durata (minuti)'
+    elif axis_type == 'artist':
+        return 'Artist' if language == 'en' else 'Artista'
+    elif axis_type == 'year':
+        return 'Year' if language == 'en' else 'Anno'
+    
+    return axis_type
+
+def get_hover_template(chart_type, language='en'):
+    """Get translated hover templates."""
+    if chart_type == 'genre':
+        if language == 'en':
+            return '<b>%{label}</b><br>Tracks: %{value:,}<br>Percentage: %{percent}<extra></extra>'
+        else:
+            return '<b>%{label}</b><br>Tracce: %{value:,}<br>Percentuale: %{percent}<extra></extra>'
+    elif chart_type == 'top_artists':
+        if language == 'en':
+            return '<b>%{y}</b><br>Tracks: %{x:,}<extra></extra>'
+        else:
+            return '<b>%{y}</b><br>Tracce: %{x:,}<extra></extra>'
+    elif chart_type == 'year_trend':
+        if language == 'en':
+            return '<b>Year %{x}</b><br>Tracks: %{y:,}<extra></extra>'
+        else:
+            return '<b>Anno %{x}</b><br>Tracce: %{y:,}<extra></extra>'
+    
+    return '%{label}: %{value}<extra></extra>'

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="it" data-bs-theme="dark">
+<html lang="{{ current_language }}" data-bs-theme="dark">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -312,6 +312,34 @@
             100% { transform: scale(1); }
         }
         
+        /* Language Dropdown Styling */
+        .dropdown-menu {
+            background: var(--bg-card) !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            backdrop-filter: blur(10px);
+            min-width: 200px;
+        }
+        
+        .dropdown-item {
+            color: var(--text-primary) !important;
+            padding: 0.75rem 1rem;
+            transition: all var(--transition-fast);
+            border-radius: var(--radius-sm);
+            margin: 0.25rem 0.5rem;
+        }
+        
+        .dropdown-item:hover {
+            background: var(--bg-hover) !important;
+            color: var(--spotify-green) !important;
+        }
+        
+        .dropdown-item.active {
+            background: rgba(29, 185, 84, 0.1) !important;
+            color: var(--spotify-green) !important;
+        }
+
         /* Toast Notifications */
         .toast-container {
             position: fixed;
@@ -374,27 +402,49 @@
                     <li class="nav-item">
                         <a class="nav-link d-flex align-items-center" href="{{ url_for('index') }}">
                             <i data-lucide="home" class="me-2" style="width: 18px; height: 18px;"></i>
-                            Dashboard
+                            {{ _('navigation.dashboard') }}
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link d-flex align-items-center" href="{{ url_for('missing_tracks') }}">
                             <i data-lucide="search" class="me-2" style="width: 18px; height: 18px;"></i>
-                            Brani Mancanti
+                            {{ _('navigation.missing_tracks') }}
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link d-flex align-items-center" href="{{ url_for('stats') }}">
                             <i data-lucide="bar-chart-3" class="me-2" style="width: 18px; height: 18px;"></i>
-                            Statistiche
+                            {{ _('navigation.stats') }}
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link d-flex align-items-center" href="{{ url_for('ai_lab') }}">
                             <i data-lucide="brain" class="me-2" style="width: 18px; height: 18px;"></i>
-                            Laboratorio AI
+                            {{ _('navigation.ai_lab') }}
                             <span id="newPlaylistBadge" class="badge bg-success ms-2" style="display: none;">NEW</span>
                         </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="languageDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i data-lucide="globe" class="me-2" style="width: 18px; height: 18px;"></i>
+                            {{ get_supported_languages()[current_language] }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown" style="background: var(--bg-card); border: 1px solid rgba(255,255,255,0.1);">
+                            {% for lang_code, lang_name in get_supported_languages().items() %}
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center {% if lang_code == current_language %}active{% endif %}" 
+                                   href="#" 
+                                   onclick="changeLanguage('{{ lang_code }}')"
+                                   style="color: var(--text-primary); transition: all var(--transition-fast);">
+                                    <span class="me-2">{{ '🇮🇹' if lang_code == 'it' else '🇺🇸' }}</span>
+                                    {{ lang_name }}
+                                    {% if lang_code == current_language %}
+                                        <i data-lucide="check" class="ms-auto" style="width: 16px; height: 16px; color: var(--spotify-green);"></i>
+                                    {% endif %}
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
                     </li>
                 </ul>
             </div>
@@ -537,6 +587,35 @@
             });
             
             return toast;
+        };
+        
+        // Language switching function
+        window.changeLanguage = function(languageCode) {
+            fetch('/api/language', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    language: languageCode
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message and reload page
+                    showToast(data.message || 'Language changed successfully', 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showToast(data.error || 'Failed to change language', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error changing language:', error);
+                showToast('Network error while changing language', 'error');
+            });
         };
     </script>
     {% block scripts %}{% endblock %}

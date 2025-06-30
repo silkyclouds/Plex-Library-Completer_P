@@ -11,6 +11,7 @@ from .helperClasses import Playlist as PlexPlaylist, Track as PlexTrack, UserInp
 from .plex import update_or_create_plex_playlist
 from .database import add_managed_ai_playlist, get_managed_ai_playlists_for_user
 from .music_charts import music_charts_searcher
+from .i18n import i18n, translate_genre
 
 # Otteniamo il logger che è già stato configurato in app.py
 logger = logging.getLogger(__name__)
@@ -47,11 +48,57 @@ def get_plex_favorites_by_id(plex: PlexServer, playlist_id: str) -> Optional[Lis
         logger.error(f"Errore imprevisto durante il recupero della playlist con ID '{playlist_id}': {e}")
         return None
 
+def get_localized_prompt_base(language: Optional[str] = None) -> str:
+    """Ottiene il prompt base nella lingua specificata"""
+    lang = language or i18n.get_language()
+    
+    if lang == 'en':
+        return """You are an expert music curator creating playlists. Create a playlist with exactly 25 tracks based on the given information.
+
+IMPORTANT FORMATTING RULES:
+1. Respond ONLY in valid JSON format
+2. Include a creative, catchy title 
+3. Add a brief description (2-3 sentences)
+4. List exactly 25 tracks with artist and title
+5. Ensure variety in genres, eras, and moods
+6. Prioritize tracks that are likely to exist in a music library
+
+JSON Format:
+{
+  "title": "Creative Playlist Title",
+  "description": "Brief description of the playlist theme and vibe",
+  "tracks": [
+    {"artist": "Artist Name", "title": "Song Title"},
+    // ... 25 tracks total
+  ]
+}"""
+    else:
+        return """Sei un esperto curatore musicale che crea playlist. Crea una playlist con esattamente 25 brani basata sulle informazioni fornite.
+
+REGOLE DI FORMATTAZIONE IMPORTANTI:
+1. Rispondi SOLO in formato JSON valido
+2. Includi un titolo creativo e accattivante
+3. Aggiungi una breve descrizione (2-3 frasi)
+4. Elenca esattamente 25 brani con artista e titolo
+5. Assicura varietà di generi, epoche e atmosfere
+6. Prioritizza brani che probabilmente esistono in una libreria musicale
+
+Formato JSON:
+{
+  "title": "Titolo Creativo della Playlist",
+  "description": "Breve descrizione del tema e dell'atmosfera della playlist",
+  "tracks": [
+    {"artist": "Nome Artista", "title": "Titolo Canzone"},
+    // ... 25 brani totali
+  ]
+}"""
+
 def generate_playlist_prompt(
     favorite_tracks: List[str],
     custom_prompt: Optional[str] = None,
     previous_week_tracks: Optional[List[Dict]] = None,
-    include_charts_data: bool = True
+    include_charts_data: bool = True,
+    language: Optional[str] = None
 ) -> str:
     """Crea un prompt robusto per produrre una playlist in JSON valido con dati di classifiche aggiornati."""
     tracks_str = "\n".join(favorite_tracks)
@@ -140,30 +187,47 @@ ISTRUZIONE SPECIALE: Per creare una "storia musicale", includi nella nuova playl
         else:
             previous_week_section = ""
 
-    prompt = f"""
-Sei un DJ esperto con accesso a dati musicali aggiornati. Il tuo compito è creare una playlist basata su un prompt e una lista di tracce preferite.
-PROMPT:
-{core_prompt}
+    # Ottieni il prompt base localizzato
+    base_prompt = get_localized_prompt_base(language)
+    lang = language or i18n.get_language()
+    
+    # Sezioni tradotte
+    if lang == 'en':
+        favorites_header = "FAVORITE TRACKS (for reference on general tastes):"
+        charts_header = "UPDATED MUSIC DATA (use for inspiration and to include current tracks):"
+        previous_header = "PREVIOUS WEEK TRACKS (for continuity):"
+        instruction_text = "INSTRUCTION: To create a \"musical story\", include 5-10 tracks from the previous week's list that best connect with the new songs you choose."
+        balance_note = "IMPORTANT: Skillfully balance the user's personal tastes with current trends to create a modern and personalized playlist."
+    else:
+        favorites_header = "LISTA TRACCE PREFERITE (per riferimento sui gusti generali):"
+        charts_header = "DATI MUSICALI AGGIORNATI (utilizza questi per ispirazione e per includere brani attuali):"
+        previous_header = "LISTA TRACCE SETTIMANA PRECEDENTE (per continuità):"
+        instruction_text = "ISTRUZIONE SPECIALE: Per creare una \"storia musicale\", includi nella nuova playlist tra i 5 e i 10 brani dalla lista della settimana precedente che si legano meglio con le nuove canzoni che sceglierai."
+        balance_note = "IMPORTANTE: Bilancia sapientemente i gusti personali dell'utente con le tendenze attuali per creare una playlist moderna e personalizzata."
 
-LISTA TRACCE PREFERITE (per riferimento sui gusti generali):
+    # Aggiorna le sezioni charts per la lingua
+    if charts_section and lang == 'en':
+        charts_section = charts_section.replace("DATI MUSICALI AGGIORNATI", "UPDATED MUSIC DATA")
+        charts_section = charts_section.replace("TENDENZE", "TRENDS")
+        charts_section = charts_section.replace("utilizza questi per ispirazione", "use for inspiration")
+        charts_section = charts_section.replace("ISTRUZIONE: Usa questi dati", "INSTRUCTION: Use this data")
+    
+    if previous_week_section and lang == 'en':
+        previous_week_section = previous_week_section.replace("LISTA TRACCE SETTIMANA PRECEDENTE", "PREVIOUS WEEK TRACKS")
+        previous_week_section = previous_week_section.replace("ISTRUZIONE SPECIALE", "SPECIAL INSTRUCTION")
+
+    prompt = f"""{base_prompt}
+
+{i18n.get_translation('ai.prompts.weekly_playlist' if not custom_prompt else 'custom', language, week=1, year=2025) if not custom_prompt else custom_prompt}
+
+{favorites_header}
 ---
 {tracks_str}
 ---
 {charts_section}
 {previous_week_section}
-REGOLE DI RISPOSTA OBBLIGATORIE:
-La tua risposta deve essere **esclusivamente un blocco di codice JSON valido**, senza testo introduttivo o commenti.
-Il JSON deve avere questa struttura esatta:
-{{
-  "playlist_name": "Un Nome Creativo in Italiano (max 4 parole)",
-  "description": "Una breve descrizione in italiano (max 1 frase).",
-  "tracks": [
-    {{ "artist": "Artista Traccia 1", "title": "Titolo Traccia 1" }},
-    {{ "artist": "Artista Traccia 2", "title": "Titolo Traccia 2" }}
-  ]
-}}
 
-IMPORTANTE: Bilancia sapientemente i gusti personali dell'utente con le tendenze attuali per creare una playlist moderna e personalizzata.
+{balance_note}
 """
     return prompt.strip()
 

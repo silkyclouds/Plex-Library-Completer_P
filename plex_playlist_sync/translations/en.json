@@ -1,0 +1,368 @@
+{
+  "app": {
+    "title": "Plex Library Completer",
+    "subtitle": "Music synchronization and completion system"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "missing_tracks": "Missing Tracks",
+    "ai_lab": "AI Lab",
+    "stats": "Statistics",
+    "settings": "Settings"
+  },
+  "dashboard": {
+    "title": "Dashboard - Plex Sync",
+    "system_sync": "Synchronization System",
+    "status": {
+      "waiting": "Waiting",
+      "running": "Operation in progress...",
+      "error": "Error! Check logs.",
+      "never_executed": "Never executed"
+    },
+    "actions": {
+      "sync_now": "Sync Everything Now",
+      "cleanup_only": "Start Cleanup Only",
+      "build_index": "Update Library Index",
+      "restart_indexing": "Restart Optimized Indexing",
+      "test_database": "Test Database",
+      "emergency_cleanup": "Emergency Cleanup"
+    },
+    "users": {
+      "managed_users": "Managed Users",
+      "maintenance": "Maintenance"
+    },
+    "alerts": {
+      "index_empty": "Library Index Empty!",
+      "index_empty_desc": "AI playlists will fail. Index the library to continue.",
+      "index_ok": "Library Index OK",
+      "operation_slow": "Slow operation",
+      "only_if_needed": "run only if necessary"
+    },
+    "index_description": "Create or update the local index of your Plex library.",
+    "stats": {
+      "tracks_synced": "Synced Tracks",
+      "missing_tracks": "Missing Tracks",
+      "ai_playlists": "AI Playlists",
+      "last_sync": "Last Sync"
+    },
+    "logs": {
+      "system_logs": "System Logs",
+      "auto_refresh": "Auto-refresh",
+      "loading": "Loading system logs..."
+    }
+  },
+  "missing_tracks": {
+    "title": "Missing Tracks",
+    "subtitle": "Manage and resolve missing tracks",
+    "search_placeholder": "Search tracks, artists, albums...",
+    "filters": {
+      "all": "All",
+      "pending": "Pending",
+      "searching": "Searching",
+      "found": "Found",
+      "downloading": "Downloading",
+      "downloaded": "Downloaded",
+      "failed": "Failed"
+    },
+    "actions": {
+      "search_all": "Search All Links",
+      "download_all": "Download All",
+      "clear_resolved": "Clear Resolved",
+      "emergency_cleanup": "Total Cleanup",
+      "scan_library": "Scan Library",
+      "force_scan_playlist": "Force Scan Playlist",
+      "refresh_list": "Refresh List"
+    },
+    "track_actions": {
+      "search_deezer": "Search on Deezer",
+      "download": "Download",
+      "mark_resolved": "Mark Resolved",
+      "delete": "Delete"
+    },
+    "stats": {
+      "total": "Total",
+      "downloading": "Downloading",
+      "tracks_to_find": "tracks to find and download"
+    },
+    "empty": {
+      "title": "No missing tracks!",
+      "description": "Great job! All tracks are present in your library.",
+      "no_tracks": "No missing tracks in your library!"
+    }
+  },
+  "ai_lab": {
+    "title": "AI Laboratory",
+    "subtitle": "Create intelligent playlists with AI",
+    "preset_title": "Quick Presets",
+    "custom_title": "Custom Request",
+    "suggestions": "Suggestions",
+    "chat": "Chat with AI",
+    "generate": "Generate Playlist",
+    "generate_for": "Generate playlist for",
+    "quick_presets_desc": "Choose a quick preset or describe your custom request",
+    "ai_generator": "AI Generator",
+    "presets": {
+      "workout": {
+        "title": "Energetic Workout",
+        "description": "High-energy music for your workouts"
+      },
+      "chill": {
+        "title": "Evening Relax",
+        "description": "Relaxing tracks for peaceful moments"
+      },
+      "focus": {
+        "title": "Focus",
+        "description": "Ambient music for studying and working"
+      },
+      "party": {
+        "title": "Party",
+        "description": "Danceable hits to liven up the evening"
+      }
+    },
+    "genres": {
+      "rock_classic": "Classic Rock",
+      "rock_classic_desc": "The great rock classics",
+      "italian_music": "Italian Music",
+      "italian_music_desc": "The best of Italian songs",
+      "electronic_edm": "Electronic & EDM",
+      "electronic_edm_desc": "Electronic and dance music"
+    },
+    "eras": {
+      "80s_90s": "'80s - '90s",
+      "80s_90s_desc": "Musical nostalgia",
+      "2000s": "2000s",
+      "2000s_desc": "Hits of the new millennium"
+    }
+  },
+  "stats": {
+    "title": "Music Statistics",
+    "subtitle": "In-depth analysis of your music library",
+    "user_select": "User:",
+    "analysis_type": {
+      "favorites": "Favorites Playlist",
+      "library": "Entire Library"
+    },
+    "refresh_cache": "Refresh Cache",
+    "slow_operation": "Slow operation - use only if necessary",
+    "data_source": {
+      "playlist": "Playlist"
+    },
+    "metrics": {
+      "total_tracks": "Total Tracks",
+      "unique_artists": "Unique Artists",
+      "unique_albums": "Unique Albums",
+      "diverse_genres": "Different Genres",
+      "music_hours": "Music Hours",
+      "average_year": "Average Year"
+    },
+    "insights": {
+      "title": "Quick Insights",
+      "top_artist": "Top Artist",
+      "favorite_genre": "Favorite Genre",
+      "dominant_decade": "Dominant Decade",
+      "average_duration": "Average Duration"
+    },
+    "charts": {
+      "genre_distribution": "Genre Distribution",
+      "decade_distribution": "Distribution by Decade",
+      "top_artists": "Top 15 Artists",
+      "track_duration": "Track Duration",
+      "year_trend": "Year Track Trend"
+    },
+    "temporal": {
+      "title": "Temporal Details",
+      "oldest_track": "Oldest Track",
+      "newest_track": "Newest Track",
+      "shortest_track": "Shortest (min)",
+      "longest_track": "Longest (min)"
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "refresh": "Refresh",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "export": "Export",
+    "import": "Import",
+    "settings": "Settings",
+    "help": "Help",
+    "about": "About",
+    "language": "Language",
+    "actions": "Actions"
+  },
+  "errors": {
+    "connection_error": "Connection error",
+    "loading_error": "Loading error",
+    "operation_failed": "Operation failed",
+    "network_error": "Network error",
+    "server_error": "Server error",
+    "database_error": "Database error",
+    "file_not_found": "File not found",
+    "permission_denied": "Permission denied"
+  },
+  "messages": {
+    "operation_completed": "Operation completed successfully",
+    "changes_saved": "Changes saved",
+    "confirm_delete": "Are you sure you want to delete this item?",
+    "confirm_cleanup": "Do you want to stop all operations and clean the missing tracks database?",
+    "no_data_available": "No data available",
+    "processing": "Processing..."
+  },
+  "logs": {
+    "sync_started": "Starting new full synchronization cycle...",
+    "sync_completed": "Synchronization and AI cycle completed.",
+    "processing_user": "Processing user: {user}",
+    "playlist_found": "Playlist '{name}' found. Updating...",
+    "playlist_updated": "Playlist '{name}' updated with {count} tracks.",
+    "track_found": "Track found via API: {track} - {artist}",
+    "database_initialized": "Database initialized successfully: {tables} tables, {size} bytes",
+    "index_created": "Database indices created successfully",
+    "library_stats": "Library index: {count} tracks indexed",
+    "ai_playlist_management": "Weekly AI Playlist Management for {user}",
+    "scheduler_start": "Scheduler: Starting automatic synchronization cycle.",
+    "scheduler_skip": "Scheduler: Skipping automatic cycle, operation already in progress.",
+    "scheduler_wait": "Scheduler: Waiting for {seconds} seconds.",
+    "download_started": "Starting download for {link} (Track ID: {id})",
+    "download_completed": "Download completed for {link} (Track ID: {id})",
+    "download_failed": "Error downloading {link} (Track ID: {id}): {error}",
+    "missing_tracks_retrieved": "Retrieved {count} missing tracks from database",
+    "playlist_scan": "Scanning playlist: {name}",
+    "playlist_skip_nodelete": "Skipped NO_DELETE playlist: '{name}' (created by Plex)",
+    "playlist_skip_tv": "Skipped TV/Movie playlist: '{name}'",
+    "stats_generation": "Generating statistics for {user} - type: {type}",
+    "stats_generated": "Statistics generated successfully for {count} tracks",
+    "critical_error": "Critical error during '{param1}' cycle: {param2}"
+  },
+  "ai": {
+    "playlist_titles": {
+      "workout": "Energetic Workout",
+      "chill": "Evening Relax", 
+      "focus": "Focus Mode",
+      "party": "Party Time",
+      "summer": "Summer Mix",
+      "winter": "Winter Vibes",
+      "morning": "Good Morning",
+      "evening": "Evening Chill",
+      "rock": "Classic Rock",
+      "pop": "Pop Hits",
+      "electronic": "Electronic",
+      "jazz": "Jazz Lounge",
+      "classical": "Classical",
+      "indie": "Indie Selection",
+      "oldies": "Golden Oldies",
+      "love": "Love Songs"
+    },
+    "prompts": {
+      "weekly_playlist": "Create a weekly playlist with 25 tracks for week {week} of {year}. Include a mix of popular genres, recent hits, and timeless classics. Give it a creative and catchy title.",
+      "genre_mix": "Create a {genre} playlist with representative tracks from the genre. Include both classics and more recent songs.",
+      "mood_playlist": "Create a playlist for {mood} with tracks that perfectly match this mood.",
+      "decade_playlist": "Create a playlist with the best songs from the {decade}s.",
+      "artist_deep_dive": "Create a playlist that deeply explores {artist}'s discography."
+    },
+    "responses": {
+      "generating": "Generating your personalized playlist...",
+      "analyzing": "Analyzing your music library...",
+      "selecting": "Selecting the perfect tracks...",
+      "creating": "Creating playlist...",
+      "completed": "Playlist created successfully!",
+      "error": "An error occurred while generating the playlist.",
+      "no_tracks": "No tracks found for the specified criteria."
+    },
+    "bot_messages": {
+      "greeting": "Hi! I'm here to help you create personalized playlists. You can choose a preset or describe exactly what you're looking for.",
+      "preset_selected": "Perfect! I've prepared an optimized prompt for {preset}. You can modify it or generate the playlist directly.",
+      "suggestions_prompt": "💡 Try these ideas:",
+      "customization_prompt": "🎛️ Customize:",
+      "charts_integration": "Include updated charts",
+      "charts_description": "Gemini will use Billboard, Spotify and current charts data for up-to-date suggestions",
+      "preview_charts": "Preview Charts",
+      "test_integration": "Test Integration",
+      "generating_progress": "Generation in progress...",
+      "starting_ai": "Starting AI process...",
+      "generate_button": "Generate Playlist with AI",
+      "playlists_created": "Created Playlists",
+      "no_playlists": "No AI playlists created yet for this user.",
+      "playlists_appear_here": "Generated playlists will appear here!",
+      "delete_confirm": "Are you sure you want to delete this playlist?",
+      "ai_assistant": "AI Assistant",
+      "now": "Now"
+    }
+  },
+  "genres": {
+    "rock": "Rock",
+    "pop": "Pop", 
+    "electronic": "Electronic",
+    "hip-hop": "Hip-Hop",
+    "jazz": "Jazz",
+    "classical": "Classical",
+    "country": "Country",
+    "folk": "Folk",
+    "blues": "Blues",
+    "reggae": "Reggae",
+    "punk": "Punk",
+    "metal": "Metal",
+    "alternative": "Alternative",
+    "indie": "Indie",
+    "dance": "Dance",
+    "house": "House",
+    "techno": "Techno",
+    "ambient": "Ambient",
+    "world": "World Music",
+    "latin": "Latin",
+    "soundtrack": "Soundtrack",
+    "experimental": "Experimental",
+    "funk": "Funk",
+    "soul": "Soul",
+    "r&b": "R&B",
+    "gospel": "Gospel",
+    "rap": "Rap",
+    "trap": "Trap",
+    "dubstep": "Dubstep",
+    "drum-and-bass": "Drum & Bass",
+    "trance": "Trance",
+    "disco": "Disco",
+    "new-wave": "New Wave",
+    "synthwave": "Synthwave",
+    "chillout": "Chillout",
+    "lounge": "Lounge",
+    "acoustic": "Acoustic",
+    "instrumental": "Instrumental",
+    "vocal": "Vocal",
+    "unknown": "Unknown",
+    "various": "Various",
+    "other": "Other"
+  },
+  "status_messages": {
+    "waiting": "Waiting",
+    "running": "Operation in progress...",
+    "error": "Error! Check logs.",
+    "never_executed": "Never executed",
+    "completed": "Completed",
+    "failed": "Failed",
+    "pending": "Pending",
+    "downloading": "Downloading",
+    "searching": "Searching",
+    "processing": "Processing...",
+    "indexing": "Indexing...",
+    "scanning": "Scanning...",
+    "updating": "Updating...",
+    "cleaning": "Cleaning...",
+    "syncing": "Syncing...",
+    "tracks_indexed": "tracks indexed",
+    "every_15s": "every 15s",
+    "console_error": "Error updating dashboard:",
+    "operation_in_progress": "Operation ({trigger_type}) in progress..."
+  },
+  "operation_types": {
+    "automatic": "Automatic"
+  }
+}

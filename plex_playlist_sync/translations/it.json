@@ -1,0 +1,368 @@
+{
+  "app": {
+    "title": "Plex Library Completer",
+    "subtitle": "Sistema di sincronizzazione e completamento musicale"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "missing_tracks": "Tracce Mancanti",
+    "ai_lab": "Laboratorio AI",
+    "stats": "Statistiche",
+    "settings": "Impostazioni"
+  },
+  "dashboard": {
+    "title": "Dashboard - Plex Sync",
+    "system_sync": "Sistema di Sincronizzazione",
+    "status": {
+      "waiting": "In attesa",
+      "running": "Operazione in corso...",
+      "error": "Errore! Controllare i log.",
+      "never_executed": "Mai eseguito"
+    },
+    "actions": {
+      "sync_now": "Sincronizza Tutto Ora",
+      "cleanup_only": "Avvia solo Pulizia",
+      "build_index": "Aggiorna Indice Libreria",
+      "restart_indexing": "Riavvia Indicizzazione Ottimizzata",
+      "test_database": "Test Database",
+      "emergency_cleanup": "Pulizia Emergenza"
+    },
+    "users": {
+      "managed_users": "Utenti Gestiti",
+      "maintenance": "Manutenzione"
+    },
+    "alerts": {
+      "index_empty": "Indice Libreria Vuoto!",
+      "index_empty_desc": "Le playlist AI falliranno. Indicizza la libreria per continuare.",
+      "index_ok": "Indice Libreria OK",
+      "operation_slow": "Operazione lenta",
+      "only_if_needed": "esegui solo se necessario"
+    },
+    "index_description": "Crea o aggiorna l'indice locale della tua libreria Plex.",
+    "stats": {
+      "tracks_synced": "Tracce Sincronizzate",
+      "missing_tracks": "Tracce Mancanti",
+      "ai_playlists": "Playlist AI",
+      "last_sync": "Ultimo Sync"
+    },
+    "logs": {
+      "system_logs": "Log di Sistema",
+      "auto_refresh": "Auto-refresh",
+      "loading": "Caricamento log di sistema..."
+    }
+  },
+  "missing_tracks": {
+    "title": "Tracce Mancanti",
+    "subtitle": "Gestisci e risolvi le tracce non trovate",
+    "search_placeholder": "Cerca tracce, artisti, album...",
+    "filters": {
+      "all": "Tutte",
+      "pending": "In Attesa",
+      "searching": "Ricerca",
+      "found": "Trovate",
+      "downloading": "Download",
+      "downloaded": "Scaricate",
+      "failed": "Fallite"
+    },
+    "actions": {
+      "search_all": "Cerca Tutti i Link",
+      "download_all": "Scarica Tutto",
+      "clear_resolved": "Pulisci Risolte",
+      "emergency_cleanup": "Pulizia Totale",
+      "scan_library": "Scansiona Libreria",
+      "force_scan_playlist": "Forza Scan Playlist",
+      "refresh_list": "Aggiorna Lista"
+    },
+    "track_actions": {
+      "search_deezer": "Cerca su Deezer",
+      "download": "Scarica",
+      "mark_resolved": "Segna Risolto",
+      "delete": "Elimina"
+    },
+    "stats": {
+      "total": "Totali",
+      "downloading": "In Download",
+      "tracks_to_find": "tracce da trovare e scaricare"
+    },
+    "empty": {
+      "title": "Nessuna traccia mancante!",
+      "description": "Ottimo lavoro! Tutte le tracce sono presenti nella tua libreria.",
+      "no_tracks": "Nessuna traccia mancante nella tua libreria!"
+    }
+  },
+  "ai_lab": {
+    "title": "Laboratorio AI",
+    "subtitle": "Crea playlist intelligenti con l'AI",
+    "preset_title": "Preset Rapidi",
+    "custom_title": "Richiesta Personalizzata",
+    "suggestions": "Suggerimenti",
+    "chat": "Chat con AI",
+    "generate": "Genera Playlist",
+    "generate_for": "Genera playlist per",
+    "quick_presets_desc": "Scegli un preset veloce o descrivi la tua richiesta personalizzata",
+    "ai_generator": "Generatore AI",
+    "presets": {
+      "workout": {
+        "title": "Allenamento Energico",
+        "description": "Musica ad alta energia per i tuoi workout"
+      },
+      "chill": {
+        "title": "Relax Serale",
+        "description": "Brani rilassanti per momenti di pace"
+      },
+      "focus": {
+        "title": "Concentrazione",
+        "description": "Musica ambientale per studiare e lavorare"
+      },
+      "party": {
+        "title": "Festa",
+        "description": "Hit ballabili per animare la serata"
+      }
+    },
+    "genres": {
+      "rock_classic": "Rock Classico",
+      "rock_classic_desc": "I grandi classici del rock",
+      "italian_music": "Musica Italiana",
+      "italian_music_desc": "Il meglio della canzone italiana",
+      "electronic_edm": "Electronic & EDM",
+      "electronic_edm_desc": "Musica elettronica e dance"
+    },
+    "eras": {
+      "80s_90s": "Anni '80 - '90",
+      "80s_90s_desc": "Nostalgia musicale",
+      "2000s": "Anni 2000",
+      "2000s_desc": "I hits del nuovo millennio"
+    }
+  },
+  "stats": {
+    "title": "Statistiche Musicali",
+    "subtitle": "Analisi approfondita della tua libreria musicale",
+    "user_select": "Utente:",
+    "analysis_type": {
+      "favorites": "Playlist Preferiti",
+      "library": "Intera Libreria"
+    },
+    "refresh_cache": "Aggiorna Cache",
+    "slow_operation": "Operazione lenta - usa solo se necessario",
+    "data_source": {
+      "playlist": "Playlist"
+    },
+    "metrics": {
+      "total_tracks": "Tracce Totali",
+      "unique_artists": "Artisti Unici",
+      "unique_albums": "Album Unici",
+      "diverse_genres": "Generi Diversi",
+      "music_hours": "Ore di Musica",
+      "average_year": "Anno Medio"
+    },
+    "insights": {
+      "title": "Insights Rapidi",
+      "top_artist": "Artista Top",
+      "favorite_genre": "Genere Preferito",
+      "dominant_decade": "Decennio Dominante",
+      "average_duration": "Durata Media"
+    },
+    "charts": {
+      "genre_distribution": "Distribuzione Generi",
+      "decade_distribution": "Distribuzione per Decennio",
+      "top_artists": "Top 15 Artisti",
+      "track_duration": "Durata Tracce",
+      "year_trend": "Trend Tracce per Anno"
+    },
+    "temporal": {
+      "title": "Dettagli Temporali",
+      "oldest_track": "Traccia più Vecchia",
+      "newest_track": "Traccia più Recente",
+      "shortest_track": "Più Corta (min)",
+      "longest_track": "Più Lunga (min)"
+    }
+  },
+  "common": {
+    "loading": "Caricamento...",
+    "error": "Errore",
+    "success": "Successo",
+    "confirm": "Conferma",
+    "cancel": "Annulla",
+    "save": "Salva",
+    "delete": "Elimina",
+    "edit": "Modifica",
+    "close": "Chiudi",
+    "refresh": "Aggiorna",
+    "search": "Cerca",
+    "filter": "Filtra",
+    "sort": "Ordina",
+    "export": "Esporta",
+    "import": "Importa",
+    "settings": "Impostazioni",
+    "help": "Aiuto",
+    "about": "Info",
+    "language": "Lingua",
+    "actions": "Azioni"
+  },
+  "errors": {
+    "connection_error": "Errore di connessione",
+    "loading_error": "Errore nel caricamento",
+    "operation_failed": "Operazione fallita",
+    "network_error": "Errore di rete",
+    "server_error": "Errore del server",
+    "database_error": "Errore database",
+    "file_not_found": "File non trovato",
+    "permission_denied": "Permesso negato"
+  },
+  "messages": {
+    "operation_completed": "Operazione completata con successo",
+    "changes_saved": "Modifiche salvate",
+    "confirm_delete": "Sei sicuro di voler eliminare questo elemento?",
+    "confirm_cleanup": "Vuoi fermare tutte le operazioni e pulire il database delle tracce mancanti?",
+    "no_data_available": "Nessun dato disponibile",
+    "processing": "Elaborazione in corso..."
+  },
+  "logs": {
+    "sync_started": "Avvio di un nuovo ciclo di sincronizzazione completo...",
+    "sync_completed": "Ciclo di sincronizzazione e AI completato.",
+    "processing_user": "Processing user: {user}",
+    "playlist_found": "Playlist '{name}' trovata. Aggiornamento in corso...",
+    "playlist_updated": "Playlist '{name}' aggiornata con {count} tracce.",
+    "track_found": "Track found via API: {track} - {artist}",
+    "database_initialized": "Database inizializzato con successo: {tables} tabelle, {size} bytes",
+    "index_created": "Indici database creati con successo",
+    "library_stats": "Indice libreria: {count} tracce indicizzate",
+    "ai_playlist_management": "Gestione Playlist AI Settimanale per {user}",
+    "scheduler_start": "Scheduler: Avvio del ciclo di sincronizzazione automatica.",
+    "scheduler_skip": "Scheduler: Salto il ciclo automatico, operazione già in corso.",
+    "scheduler_wait": "Scheduler: In attesa per {seconds} secondi.",
+    "download_started": "Avvio download per {link} (ID traccia: {id})",
+    "download_completed": "Download completato per {link} (ID traccia: {id})",
+    "download_failed": "Errore durante il download di {link} (ID traccia: {id}): {error}",
+    "missing_tracks_retrieved": "Recuperate {count} tracce mancanti dal database",
+    "playlist_scan": "Scansione playlist: {name}",
+    "playlist_skip_nodelete": "Saltata playlist NO_DELETE: '{name}' (creata da Plex)",
+    "playlist_skip_tv": "Saltata playlist TV/Film: '{name}'",
+    "stats_generation": "Generazione statistiche per {user} - tipo: {type}",
+    "stats_generated": "Statistiche generate con successo per {count} tracce",
+    "critical_error": "Errore critico durante il ciclo '{param1}': {param2}"
+  },
+  "ai": {
+    "playlist_titles": {
+      "workout": "Allenamento Energico",
+      "chill": "Relax Serale", 
+      "focus": "Concentrazione",
+      "party": "Festa",
+      "summer": "Mix Estivo",
+      "winter": "Atmosfere Invernali",
+      "morning": "Buongiorno",
+      "evening": "Sera Rilassante",
+      "rock": "Rock Classico",
+      "pop": "Pop Hits",
+      "electronic": "Elettronica",
+      "jazz": "Jazz Lounge",
+      "classical": "Classica",
+      "indie": "Indie Selection",
+      "oldies": "Vecchie Glorie",
+      "love": "Canzoni d'Amore"
+    },
+    "prompts": {
+      "weekly_playlist": "Crea una playlist settimanale con 25 brani per la settimana {week} del {year}. Includi un mix di generi popolari, hits recenti e classici senza tempo. Dai un titolo creativo e accattivante.",
+      "genre_mix": "Crea una playlist di {genre} con brani rappresentativi del genere. Includi sia classici che brani più recenti.",
+      "mood_playlist": "Crea una playlist per {mood} con brani che si adattano perfettamente a questo stato d'animo.",
+      "decade_playlist": "Crea una playlist con le migliori canzoni degli anni {decade}.",
+      "artist_deep_dive": "Crea una playlist che esplori in profondità la discografia di {artist}."
+    },
+    "responses": {
+      "generating": "Sto generando la tua playlist personalizzata...",
+      "analyzing": "Analizzando la tua libreria musicale...",
+      "selecting": "Selezionando i brani perfetti...",
+      "creating": "Creando la playlist...",
+      "completed": "Playlist creata con successo!",
+      "error": "Si è verificato un errore durante la generazione della playlist.",
+      "no_tracks": "Nessuna traccia trovata per i criteri specificati."
+    },
+    "bot_messages": {
+      "greeting": "Ciao! Sono qui per aiutarti a creare playlist personalizzate. Puoi scegliere un preset o descrivimi esattamente cosa cerchi.",
+      "preset_selected": "Perfetto! Ho preparato un prompt ottimizzato per {preset}. Puoi modificarlo o generare direttamente la playlist.",
+      "suggestions_prompt": "💡 Prova queste idee:",
+      "customization_prompt": "🎛️ Personalizza:",
+      "charts_integration": "Includi classifiche aggiornate",
+      "charts_description": "Gemini userà dati di Billboard, Spotify e classifiche attuali per suggerimenti aggiornati",
+      "preview_charts": "Anteprima Classifiche",
+      "test_integration": "Test Integrazione",
+      "generating_progress": "Generazione in corso...",
+      "starting_ai": "Avvio processo AI...",
+      "generate_button": "Genera Playlist con AI",
+      "playlists_created": "Playlist Create",
+      "no_playlists": "Nessuna playlist AI ancora creata per questo utente.",
+      "playlists_appear_here": "Le playlist generate appariranno qui!",
+      "delete_confirm": "Sei sicuro di voler eliminare questa playlist?",
+      "ai_assistant": "AI Assistant",
+      "now": "Ora"
+    }
+  },
+  "genres": {
+    "rock": "Rock",
+    "pop": "Pop", 
+    "electronic": "Elettronica",
+    "hip-hop": "Hip-Hop",
+    "jazz": "Jazz",
+    "classical": "Classica",
+    "country": "Country",
+    "folk": "Folk",
+    "blues": "Blues",
+    "reggae": "Reggae",
+    "punk": "Punk",
+    "metal": "Metal",
+    "alternative": "Alternative",
+    "indie": "Indie",
+    "dance": "Dance",
+    "house": "House",
+    "techno": "Techno",
+    "ambient": "Ambient",
+    "world": "World Music",
+    "latin": "Latin",
+    "soundtrack": "Colonne Sonore",
+    "experimental": "Sperimentale",
+    "funk": "Funk",
+    "soul": "Soul",
+    "r&b": "R&B",
+    "gospel": "Gospel",
+    "rap": "Rap",
+    "trap": "Trap",
+    "dubstep": "Dubstep",
+    "drum-and-bass": "Drum & Bass",
+    "trance": "Trance",
+    "disco": "Disco",
+    "new-wave": "New Wave",
+    "synthwave": "Synthwave",
+    "chillout": "Chillout",
+    "lounge": "Lounge",
+    "acoustic": "Acustica",
+    "instrumental": "Strumentale",
+    "vocal": "Vocale",
+    "unknown": "Sconosciuto",
+    "various": "Vari",
+    "other": "Altri"
+  },
+  "status_messages": {
+    "waiting": "In attesa",
+    "running": "Operazione in corso...",
+    "error": "Errore! Controllare i log.",
+    "never_executed": "Mai eseguito",
+    "completed": "Completato",
+    "failed": "Fallito",
+    "pending": "In attesa",
+    "downloading": "Download in corso",
+    "searching": "Ricerca in corso",
+    "processing": "Elaborazione...",
+    "indexing": "Indicizzazione...",
+    "scanning": "Scansione...",
+    "updating": "Aggiornamento...",
+    "cleaning": "Pulizia...",
+    "syncing": "Sincronizzazione...",
+    "tracks_indexed": "tracce indicizzate",
+    "every_15s": "ogni 15s",
+    "console_error": "Errore durante l'aggiornamento della dashboard:",
+    "operation_in_progress": "Operazione ({trigger_type}) in corso..."
+  },
+  "operation_types": {
+    "automatic": "Automatica"
+  }
+}

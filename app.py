@@ -45,11 +45,15 @@ from plex_playlist_sync.utils.database import (
     clean_tv_content_from_missing_tracks, clean_resolved_missing_tracks
 )
 from plex_playlist_sync.utils.downloader import DeezerLinkFinder, download_single_track_with_streamrip
+from plex_playlist_sync.utils.i18n import init_i18n_for_app, translate_status
 
 initialize_db()
 
 app = Flask(__name__, template_folder='templates')
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "una-chiave-segreta-casuale-e-robusta")
+
+# Initialize i18n service
+init_i18n_for_app(app)
 
 app_state = { "status": "In attesa", "last_sync": "Mai eseguito", "is_running": False }
 
@@ -64,12 +68,12 @@ def download_worker():
             break
         link, track_id = track_info
         try:
-            log.info(f"Avvio download per {link} (ID traccia: {track_id})")
+            log.info(f"Starting download for {link} (Track ID: {track_id})")
             download_single_track_with_streamrip(link) # Ora accetta un singolo link
             update_track_status(track_id, 'downloaded')
-            log.info(f"Download completato per {link} (ID traccia: {track_id})")
+            log.info(f"Download completed for {link} (Track ID: {track_id})")
         except Exception as e:
-            log.error(f"Errore durante il download di {link} (ID traccia: {track_id}): {e}", exc_info=True)
+            log.error(f"Error downloading {link} (Track ID: {track_id}): {e}", exc_info=True)
         finally:
             download_queue.task_done()
 
@@ -78,11 +82,11 @@ def background_scheduler():
     wait_seconds = int(os.getenv("SECONDS_TO_WAIT", 86400))
     while True:
         if not app_state["is_running"]:
-            log.info(f"Scheduler: Avvio del ciclo di sincronizzazione automatica.")
+            log.info("Scheduler: Starting automatic synchronization cycle.")
             run_task_in_background("Automatica", run_full_sync_cycle)
         else:
-            log.info("Scheduler: Salto il ciclo automatico, operazione già in corso.")
-        log.info(f"Scheduler: In attesa per {wait_seconds} secondi.")
+            log.info("Scheduler: Skipping automatic cycle, operation already in progress.")
+        log.info(f"Scheduler: Waiting for {wait_seconds} seconds.")
         time.sleep(wait_seconds)
 
 def run_task_in_background(trigger_type, target_function, *args):
@@ -95,8 +99,8 @@ def run_task_in_background(trigger_type, target_function, *args):
             app_state["last_sync"] = time.strftime("%d/%m/%Y %H:%M:%S")
         app_state["status"] = "In attesa"
     except Exception as e:
-        log.error(f"Errore critico durante il ciclo '{trigger_type}': {e}", exc_info=True)
-        app_state["status"] = "Errore! Controllare i log."
+        log.error(f"Critical error during '{trigger_type}' cycle: {e}", exc_info=True)
+        app_state["status"] = "Error! Check logs."
     finally:
         app_state["is_running"] = False
 
@@ -118,7 +122,7 @@ def start_background_task(target_function, flash_message, *args):
                 task_thread = threading.Thread(target=run_task_in_background, args=("Manuale", target_function, *args))
                 task_thread.start()
             else:
-                flash("Un'operazione è già in corso. Attendi il completamento.", "warning")
+                flash("An operation is already in progress. Please wait for completion.", "warning")
         else:
             flash("Un'operazione è già in corso. Attendi il completamento.", "warning")
     else:
@@ -137,10 +141,10 @@ def index():
 def missing_tracks():
     try:
         all_missing_tracks = get_missing_tracks()
-        log.info(f"Recuperate {len(all_missing_tracks)} tracce mancanti")
+        log.info(f"Retrieved {len(all_missing_tracks)} missing tracks")
         return render_template('missing_tracks.html', tracks=all_missing_tracks)
     except Exception as e:
-        log.error(f"Errore nella pagina missing_tracks: {e}", exc_info=True)
+        log.error(f"Error in missing_tracks page: {e}", exc_info=True)
         flash(f"Errore nel recupero delle tracce mancanti: {str(e)}", "error")
         return render_template('missing_tracks.html', tracks=[])
 
@@ -151,7 +155,7 @@ def stats():
     analysis_type = request.args.get('type', 'favorites')  # 'favorites' o 'library'
     
     if force_refresh: 
-        flash('Aggiornamento forzato della cache in corso...', 'info')
+        flash('Forced cache update in progress...', 'info')
     
     user_token = os.getenv('PLEX_TOKEN') if selected_user == 'main' else os.getenv('PLEX_TOKEN_USERS')
     plex_url = os.getenv('PLEX_URL')
@@ -161,11 +165,11 @@ def stats():
     # Default error state
     error_msg = None
     charts = {
-        'genre_chart': "<div class='alert alert-warning'>Dati non disponibili</div>",
-        'decade_chart': "<div class='alert alert-warning'>Dati non disponibili</div>",
-        'artists_chart': "<div class='alert alert-warning'>Dati non disponibili</div>",
-        'duration_chart': "<div class='alert alert-warning'>Dati non disponibili</div>",
-        'trend_chart': "<div class='alert alert-warning'>Dati non disponibili</div>"
+        'genre_chart': "<div class='alert alert-warning'>Data not available</div>",
+        'decade_chart': "<div class='alert alert-warning'>Data not available</div>",
+        'artists_chart': "<div class='alert alert-warning'>Data not available</div>",
+        'duration_chart': "<div class='alert alert-warning'>Data not available</div>",
+        'trend_chart': "<div class='alert alert-warning'>Data not available</div>"
     }
     library_stats = {}
     
@@ -173,7 +177,7 @@ def stats():
     target_id = None
     if analysis_type == 'favorites':
         if not favorites_id:
-            error_msg = f"ID della playlist dei preferiti non configurato per '{user_aliases.get(selected_user)}'"
+            error_msg = f"Favorites playlist ID not configured for '{user_aliases.get(selected_user)}'"
         else:
             target_id = favorites_id
     # analysis_type == 'library' usa target_id = None per analizzare tutta la libreria
@@ -181,28 +185,33 @@ def stats():
     if user_token and plex_url and (target_id or analysis_type == 'library') and not error_msg:
         try:
             plex = PlexServer(plex_url, user_token)
-            log.info(f"Generazione statistiche per {selected_user} - tipo: {analysis_type}")
+            log.info(f"Generating statistics for {selected_user} - type: {analysis_type}")
             
-            # Recupera DataFrame con metadati estesi
-            df = get_plex_tracks_as_df(plex, playlist_id=target_id, force_refresh=force_refresh)
+            # Get current language for data processing and charts
+            from plex_playlist_sync.utils.i18n import get_i18n
+            current_lang = get_i18n().get_language()
+            
+            # Retrieve DataFrame with extended metadata
+            df = get_plex_tracks_as_df(plex, playlist_id=target_id, force_refresh=force_refresh, language=current_lang)
             
             if not df.empty:
-                # Genera tutti i grafici
-                charts['genre_chart'] = generate_genre_pie_chart(df)
-                charts['decade_chart'] = generate_decade_bar_chart(df)
-                charts['artists_chart'] = generate_top_artists_chart(df, top_n=15)
-                charts['duration_chart'] = generate_duration_distribution(df)
-                charts['trend_chart'] = generate_year_trend_chart(df)
+                
+                # Generate all charts with language support
+                charts['genre_chart'] = generate_genre_pie_chart(df, current_lang)
+                charts['decade_chart'] = generate_decade_bar_chart(df, current_lang)
+                charts['artists_chart'] = generate_top_artists_chart(df, top_n=15, language=current_lang)
+                charts['duration_chart'] = generate_duration_distribution(df, current_lang)
+                charts['trend_chart'] = generate_year_trend_chart(df, current_lang)
                 
                 # Statistiche numeriche avanzate
                 library_stats = get_library_statistics(df)
                 
-                log.info(f"Statistiche generate con successo per {len(df)} tracce")
+                log.info(f"Statistics generated successfully for {len(df)} tracks")
             else:
-                error_msg = "Nessuna traccia trovata per l'analisi"
+                error_msg = "No tracks found for analysis"
                 
         except Exception as e:
-            log.error(f"Errore nella generazione statistiche per {selected_user}: {e}", exc_info=True)
+            log.error(f"Error generating statistics for {selected_user}: {e}", exc_info=True)
             error_msg = f"Errore nel caricamento dei dati: {str(e)}"
     
     if error_msg:
@@ -251,8 +260,8 @@ def ai_lab():
         
         existing_playlists = get_managed_ai_playlists_for_user(selected_user_key)
     except Exception as e:
-        log.error(f"Errore nel recupero dati AI Lab: {e}", exc_info=True)
-        flash(f"Errore nel caricamento dell'AI Lab: {str(e)}", "error")
+        log.error(f"Error retrieving AI Lab data: {e}", exc_info=True)
+        flash(f"Error loading AI Lab: {str(e)}", "error")
         existing_playlists = []
         user_aliases = get_user_aliases()
         selected_user_key = 'main'
@@ -279,18 +288,18 @@ def ai_lab():
         include_charts = request.form.get('include_charts', 'on') == 'on'
         
         def generate_and_download_task(plex, user_inputs, fav_id, prompt, user_key):
-            log.info("FASE 1: Generazione playlist AI on-demand...")
+            log.info("PHASE 1: On-demand AI playlist generation...")
             generate_on_demand_playlist(plex, user_inputs, fav_id, prompt, user_key, include_charts_data=include_charts)
-            log.info("FASE 2: Avvio download automatico...")
+            log.info("PHASE 2: Starting automatic download...")
             download_attempted = run_downloader_only()
             
             if download_attempted:
-                log.info("FASE 3: Attesa scansione Plex e verifica tracce...")
+                log.info("PHASE 3: Waiting for Plex scan and track verification...")
                 import time
                 wait_time = int(os.getenv("PLEX_SCAN_WAIT_TIME", "300"))
-                log.info(f"Attendo {wait_time} secondi per dare a Plex il tempo di indicizzare...")
+                log.info(f"Waiting {wait_time} seconds to give Plex time to index...")
                 time.sleep(wait_time)
-                log.info("FASE 4: Rescan e aggiornamento playlist AI...")
+                log.info("PHASE 4: Rescan and AI playlist update...")
                 rescan_and_update_missing()
             else:
                 log.info("Nessun download eseguito, salto la fase di rescan")
@@ -302,7 +311,7 @@ def ai_lab():
 @app.route('/delete_ai_playlist/<int:playlist_db_id>', methods=['POST'])
 def delete_ai_playlist_route(playlist_db_id):
     if app_state["is_running"]:
-        flash("Impossibile eliminare mentre un'altra operazione è in corso.", "warning")
+        flash("Cannot delete while another operation is in progress.", "warning")
         return redirect(url_for('ai_lab'))
         
     playlist_details = get_managed_playlist_details(playlist_db_id)
@@ -317,14 +326,14 @@ def delete_ai_playlist_route(playlist_db_id):
     try:
         plex = PlexServer(plex_url, user_token)
         plex_playlist = plex.fetchItem(playlist_details['plex_rating_key'])
-        log.warning(f"Eliminazione della playlist '{plex_playlist.title}' da Plex...")
+        log.warning(f"Deleting playlist '{plex_playlist.title}' from Plex...")
         plex_playlist.delete()
-        flash(f"Playlist '{plex_playlist.title}' eliminata da Plex.", "info")
+        flash(f"Playlist '{plex_playlist.title}' deleted from Plex.", "info")
     except NotFound:
-        log.warning(f"Playlist con ratingKey {playlist_details['plex_rating_key']} non trovata su Plex, probabilmente già eliminata.")
+        log.warning(f"Playlist with ratingKey {playlist_details['plex_rating_key']} not found on Plex, probably already deleted.")
     except Exception as e:
-        log.error(f"Errore durante l'eliminazione della playlist da Plex: {e}")
-        flash("Errore durante l'eliminazione da Plex, ma procederò a rimuoverla dal database locale.", "warning")
+        log.error(f"Error deleting playlist from Plex: {e}")
+        flash("Error deleting from Plex, but will proceed to remove from local database.", "warning")
 
     delete_managed_ai_playlist(playlist_db_id)
     flash(f"Playlist rimossa dal database di gestione.", "info")
@@ -340,7 +349,7 @@ def delete_missing_track_route(track_id):
         flash("Traccia rimossa con successo dalla lista dei mancanti.", "info")
     except Exception as e:
         log.error(f"Errore durante l'eliminazione della traccia mancante ID {track_id}: {e}")
-        flash("Errore durante l'eliminazione della traccia.", "warning")
+        flash("Error deleting track.", "warning")
     return redirect(url_for('missing_tracks'))
 
 @app.route('/delete_all_missing_tracks', methods=['POST'])
@@ -350,7 +359,7 @@ def delete_all_missing_tracks_route():
         flash("Tutte le tracce mancanti sono state eliminate.", "info")
     except Exception as e:
         log.error(f"Errore durante l'eliminazione di tutte le tracce mancanti: {e}")
-        flash("Errore durante l'eliminazione di tutte le tracce mancanti.", "warning")
+        flash("Error deleting all missing tracks.", "warning")
     return redirect(url_for('missing_tracks'))
 
 @app.route('/emergency_cleanup', methods=['POST'])
@@ -366,7 +375,7 @@ def emergency_cleanup():
         delete_all_missing_tracks()
         
         flash("🚨 Pulizia emergenza completata: operazioni fermate e tracce mancanti eliminate.", "success")
-        flash("ℹ️ Ora puoi procedere con l'indicizzazione della libreria.", "info")
+        flash("ℹ️ You can now proceed with library indexing.", "info")
     except Exception as e:
         log.error(f"Errore durante pulizia emergenza: {e}")
         flash("Errore durante la pulizia di emergenza.", "error")
@@ -400,7 +409,7 @@ def test_database():
         final_size = os.path.getsize(DB_PATH) if os.path.exists(DB_PATH) else 0
         log.info(f"✅ Dimensione finale database: {final_size} bytes")
         
-        flash(f"✅ Test database completato con successo! ({final_size} bytes, {stats['total_tracks_indexed']} tracce)", "success")
+        flash(f"✅ Database test completed successfully! ({final_size} bytes, {stats['total_tracks_indexed']} tracks)", "success")
         
     except Exception as e:
         log.error(f"❌ Errore test database: {e}", exc_info=True)
@@ -424,10 +433,10 @@ def test_matching_improvements_route():
             old_pct = (results['old_matches'] / results['test_size']) * 100
             new_pct = (results['new_matches'] / results['test_size']) * 100
             
-            flash(f"🧪 Test completato su {results['test_size']} tracce:", "info")
-            flash(f"📊 Sistema vecchio: {results['old_matches']} trovate ({old_pct:.1f}%)", "info")
-            flash(f"📊 Sistema nuovo: {results['new_matches']} trovate ({new_pct:.1f}%)", "success")
-            flash(f"🎯 Miglioramento: +{results['improvements']} tracce ({improvement_pct:.1f}%)", "success")
+            flash(f"🧪 Test completed on {results['test_size']} tracks:", "info")
+            flash(f"📊 Old system: {results['old_matches']} found ({old_pct:.1f}%)", "info")
+            flash(f"📊 New system: {results['new_matches']} found ({new_pct:.1f}%)", "success")
+            flash(f"🎯 Improvement: +{results['improvements']} tracks ({improvement_pct:.1f}%)", "success")
         else:
             flash("❌ Errore durante il test matching", "error")
         
@@ -483,7 +492,7 @@ def find_and_download_missing_tracks_auto():
                 tracks_to_download.append(track)
         
         if not tracks_to_download:
-            log.info("Nessuna traccia valida rimasta da scaricare dopo il controllo.")
+            log.info("No valid tracks left to download after verification.")
             return
 
         # Fase 2: Cerca i link per le tracce rimanenti in parallelo
@@ -546,7 +555,7 @@ def build_index_route():
         # Se l'indice è vuoto e c'è un'operazione in corso, la fermiamo per dare priorità all'indicizzazione
         app_state["is_running"] = False
         app_state["status"] = "Operazione fermata per dare priorità all'indicizzazione"
-        flash("⚠️ Operazione in corso fermata per dare priorità all'indicizzazione della libreria.", "warning")
+        flash("⚠️ Operation in progress stopped to prioritize library indexing.", "warning")
     return start_background_task(build_library_index, "Avvio indicizzazione libreria...")
 
 @app.route('/restart_indexing', methods=['POST'])
@@ -558,7 +567,7 @@ def restart_indexing():
         if index_stats['total_tracks_indexed'] == 0:
             app_state["is_running"] = False
             app_state["status"] = "Operazione fermata per riavvio indicizzazione ottimizzata"
-            flash("⚠️ Operazione fermata per dare priorità al riavvio dell'indicizzazione.", "warning")
+            flash("⚠️ Operation stopped to prioritize indexing restart.", "warning")
         else:
             flash("Un'operazione è già in corso. Attendi il completamento.", "warning")
             return redirect(url_for('index'))
@@ -596,7 +605,7 @@ def comprehensive_verify_missing_route():
         all_missing_tracks = get_missing_tracks()
         
         if not all_missing_tracks:
-            log.info("Nessuna traccia mancante da verificare.")
+            log.info("No missing tracks to verify.")
             app_state['status'] = "Nessuna traccia da verificare"
             return
         
@@ -737,7 +746,28 @@ def get_logs():
             log_content = "".join(f.readlines()[-100:])
     except FileNotFoundError:
         log_content = "File di log non ancora creato."
-    return jsonify(logs=log_content, status=app_state["status"], last_sync=app_state["last_sync"], is_running=app_state["is_running"])
+    # Traduci lo stato e l'ultimo sync per la risposta API
+    status = app_state["status"]
+    # Se lo status contiene "Operazione (X) in corso", traduci con template
+    if "Operazione (" in status and ") in corso" in status:
+        # Estrai il tipo di operazione dalle parentesi
+        import re
+        match = re.search(r'Operazione \((.+)\) in corso', status)
+        if match:
+            trigger_type = match.group(1)
+            from plex_playlist_sync.utils.i18n import get_i18n
+            i18n = get_i18n()
+            # Traduci il tipo di operazione
+            if trigger_type == "Automatica":
+                trigger_type_translated = i18n.get_translation('operation_types.automatic')
+            else:
+                trigger_type_translated = trigger_type
+            status = i18n.get_translation('status_messages.operation_in_progress', trigger_type=trigger_type_translated)
+    else:
+        status = translate_status(status)
+    
+    translated_last_sync = translate_status(app_state["last_sync"])
+    return jsonify(logs=log_content, status=status, last_sync=translated_last_sync, is_running=app_state["is_running"])
 
 @app.route('/api/stats')
 def api_stats():

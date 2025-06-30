@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Dashboard - Plex Sync{% endblock %}
+{% block title %}{{ _('dashboard.title') }}{% endblock %}
 
 {% block content %}
 <!-- Status Cards Row -->
@@ -10,16 +10,16 @@
             <div class="card-body">
                 <div class="d-flex align-items-center mb-3">
                     <i data-lucide="activity" class="me-3" style="width: 28px; height: 28px; color: var(--spotify-green);"></i>
-                    <h2 class="card-title mb-0">Sistema di Sincronizzazione</h2>
+                    <h2 class="card-title mb-0">{{ _('dashboard.system_sync') }}</h2>
                 </div>
                 
                 <!-- Status Display -->
                 <div class="text-center mb-4 p-4" style="background: var(--gradient-card); border-radius: var(--radius-md);">
                     <div class="d-flex align-items-center justify-content-center mb-2">
                         <i data-lucide="circle" id="status-icon" class="me-2" style="width: 16px; height: 16px;"></i>
-                        <p class="fs-4 fw-bold mb-0" id="status-text">Caricamento...</p>
+                        <p class="fs-4 fw-bold mb-0" id="status-text">{{ _('common.loading') }}</p>
                     </div>
-                    <small class="text-secondary" id="last-sync-time">Recupero informazioni...</small>
+                    <small class="text-secondary" id="last-sync-time">{{ _('dashboard.logs.loading') }}</small>
                 </div>
                 
                 <!-- Quick Actions -->
@@ -28,7 +28,7 @@
                         <form action="{{ url_for('sync_now') }}" method="post">
                             <button id="btn-sync" type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-center">
                                 <i data-lucide="refresh-cw" class="me-2" style="width: 18px; height: 18px;"></i>
-                                Sincronizza Tutto Ora
+                                {{ _('dashboard.actions.sync_now') }}
                             </button>
                         </form>
                     </div>
@@ -36,7 +36,7 @@
                         <form action="{{ url_for('cleanup_now') }}" method="post">
                             <button id="btn-cleanup" type="submit" class="btn btn-secondary w-100 d-flex align-items-center justify-content-center">
                                 <i data-lucide="trash-2" class="me-2" style="width: 18px; height: 18px;"></i>
-                                Avvia solo Pulizia
+                                {{ _('dashboard.actions.cleanup_only') }}
                             </button>
                         </form>
                     </div>
@@ -51,7 +51,7 @@
             <div class="card-body">
                 <div class="d-flex align-items-center mb-3">
                     <i data-lucide="users" class="me-3" style="width: 24px; height: 24px; color: var(--accent-blue);"></i>
-                    <h3 class="card-title mb-0">Utenti Gestiti</h3>
+                    <h3 class="card-title mb-0">{{ _('dashboard.users.managed_users') }}</h3>
                 </div>
                 
                 <div class="mb-4">
@@ -68,36 +68,36 @@
                 <div class="mt-4">
                     <div class="d-flex align-items-center mb-3">
                         <i data-lucide="settings" class="me-3" style="width: 20px; height: 20px; color: var(--accent-yellow);"></i>
-                        <h4 class="mb-0">Manutenzione</h4>
+                        <h4 class="mb-0">{{ _('dashboard.users.maintenance') }}</h4>
                     </div>
                     
                     {% if index_stats.total_tracks_indexed == 0 %}
                     <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
                         <i data-lucide="alert-triangle" class="me-2" style="width: 20px; height: 20px;"></i>
                         <div>
-                            <strong>⚠️ Indice Libreria Vuoto!</strong><br>
-                            <small>Le playlist AI falliranno. Indicizza la libreria per continuare.</small>
+                            <strong>⚠️ {{ _('dashboard.alerts.index_empty') }}</strong><br>
+                            <small>{{ _('dashboard.alerts.index_empty_desc') }}</small>
                         </div>
                     </div>
                     {% else %}
                     <div class="alert alert-success d-flex align-items-center mb-3" role="alert">
                         <i data-lucide="check-circle" class="me-2" style="width: 20px; height: 20px;"></i>
                         <div>
-                            <strong>✅ Indice Libreria OK</strong><br>
-                            <small>{{ index_stats.total_tracks_indexed }} tracce indicizzate</small>
+                            <strong>✅ {{ _('dashboard.alerts.index_ok') }}</strong><br>
+                            <small>{{ index_stats.total_tracks_indexed }} {{ _('status_messages.tracks_indexed') }}</small>
                         </div>
                     </div>
                     {% endif %}
                     
                     <p class="text-secondary small mb-3">
-                        Crea o aggiorna l'indice locale della tua libreria Plex.
-                        <span class="text-warning fw-medium">Operazione lenta</span> - esegui solo se necessario.
+                        {{ _('dashboard.index_description') }}
+                        <span class="text-warning fw-medium">{{ _('dashboard.alerts.operation_slow') }}</span> - {{ _('dashboard.alerts.only_if_needed') }}.
                     </p>
                     <div class="d-grid gap-2">
                         <form action="{{ url_for('build_index_route') }}" method="post">
                             <button id="btn-index" type="submit" class="btn {% if index_stats.total_tracks_indexed == 0 %}btn-warning{% else %}btn-secondary{% endif %} w-100 d-flex align-items-center justify-content-center">
                                 <i data-lucide="database" class="me-2" style="width: 16px; height: 16px;"></i>
-                                Aggiorna Indice Libreria
+                                {{ _('dashboard.actions.build_index') }}
                             </button>
                         </form>
                         
@@ -105,19 +105,19 @@
                         <form action="{{ url_for('restart_indexing') }}" method="post">
                             <button type="submit" class="btn btn-outline-success btn-sm w-100 d-flex align-items-center justify-content-center">
                                 <i data-lucide="rotate-cw" class="me-2" style="width: 14px; height: 14px;"></i>
-                                🔄 Riavvia Indicizzazione Ottimizzata
+                                🔄 {{ _('dashboard.actions.restart_indexing') }}
                             </button>
                         </form>
                         <form action="{{ url_for('test_database') }}" method="post">
                             <button type="submit" class="btn btn-outline-info btn-sm w-100 d-flex align-items-center justify-content-center">
                                 <i data-lucide="activity" class="me-2" style="width: 14px; height: 14px;"></i>
-                                🔧 Test Database
+                                🔧 {{ _('dashboard.actions.test_database') }}
                             </button>
                         </form>
-                        <form action="{{ url_for('emergency_cleanup') }}" method="post" onsubmit="return confirm('Vuoi fermare tutte le operazioni e pulire il database delle tracce mancanti?');">
+                        <form action="{{ url_for('emergency_cleanup') }}" method="post" onsubmit="return confirm('{{ _('messages.confirm_cleanup') }}');"
                             <button type="submit" class="btn btn-outline-danger btn-sm w-100 d-flex align-items-center justify-content-center">
                                 <i data-lucide="alert-triangle" class="me-2" style="width: 14px; height: 14px;"></i>
-                                🚨 Pulizia Emergenza
+                                🚨 {{ _('dashboard.actions.emergency_cleanup') }}
                             </button>
                         </form>
                         {% endif %}
@@ -134,7 +134,7 @@
         <div class="card text-center animate-slide-up" style="animation-delay: 0.2s;">
             <div class="card-body py-4">
                 <i data-lucide="music" class="mb-3" style="width: 32px; height: 32px; color: var(--spotify-green);"></i>
-                <h5 class="card-title mb-1">Tracce Sincronizzate</h5>
+                <h5 class="card-title mb-1">{{ _('dashboard.stats.tracks_synced') }}</h5>
                 <p class="fs-3 fw-bold text-primary mb-0" id="tracks-count">-</p>
             </div>
         </div>
@@ -143,7 +143,7 @@
         <div class="card text-center animate-slide-up" style="animation-delay: 0.3s;">
             <div class="card-body py-4">
                 <i data-lucide="search" class="mb-3" style="width: 32px; height: 32px; color: var(--accent-red);"></i>
-                <h5 class="card-title mb-1">Tracce Mancanti</h5>
+                <h5 class="card-title mb-1">{{ _('dashboard.stats.missing_tracks') }}</h5>
                 <p class="fs-3 fw-bold text-warning mb-0" id="missing-count">-</p>
             </div>
         </div>
@@ -152,7 +152,7 @@
         <div class="card text-center animate-slide-up" style="animation-delay: 0.4s;">
             <div class="card-body py-4">
                 <i data-lucide="brain" class="mb-3" style="width: 32px; height: 32px; color: var(--accent-purple);"></i>
-                <h5 class="card-title mb-1">Playlist AI</h5>
+                <h5 class="card-title mb-1">{{ _('dashboard.stats.ai_playlists') }}</h5>
                 <p class="fs-3 fw-bold text-info mb-0" id="ai-playlists-count">-</p>
             </div>
         </div>
@@ -161,7 +161,7 @@
         <div class="card text-center animate-slide-up" style="animation-delay: 0.5s;">
             <div class="card-body py-4">
                 <i data-lucide="clock" class="mb-3" style="width: 32px; height: 32px; color: var(--accent-blue);"></i>
-                <h5 class="card-title mb-1">Ultimo Sync</h5>
+                <h5 class="card-title mb-1">{{ _('dashboard.stats.last_sync') }}</h5>
                 <p class="fs-6 fw-medium mb-0" id="last-sync-short">-</p>
             </div>
         </div>
@@ -174,19 +174,19 @@
         <div class="d-flex align-items-center justify-content-between mb-3">
             <div class="d-flex align-items-center">
                 <i data-lucide="terminal" class="me-3" style="width: 24px; height: 24px; color: var(--text-secondary);"></i>
-                <h3 class="card-title mb-0">Log di Sistema</h3>
+                <h3 class="card-title mb-0">{{ _('dashboard.logs.system_logs') }}</h3>
             </div>
             <div class="d-flex align-items-center">
-                <span class="badge bg-secondary me-2">Auto-refresh</span>
+                <span class="badge bg-secondary me-2">{{ _('dashboard.logs.auto_refresh') }}</span>
                 <div class="d-flex align-items-center">
                     <div class="spinner-border spinner-border-sm me-2" style="width: 12px; height: 12px; color: var(--spotify-green);" role="status"></div>
-                    <small class="text-secondary">ogni 15s</small>
+                    <small class="text-secondary">{{ _('status_messages.every_15s') }}</small>
                 </div>
             </div>
         </div>
         <div class="position-relative">
             <div class="p-3 rounded-3" style="height: 350px; overflow-y: auto; background: var(--bg-secondary); font-family: 'SF Mono', 'Monaco', 'Consolas', monospace; font-size: 0.85em; border: 1px solid rgba(255,255,255,0.1);">
-                <code id="log-content" class="text-light">Caricamento log di sistema...</code>
+                <code id="log-content" class="text-light">{{ _('dashboard.logs.loading') }}</code>
             </div>
             <!-- Fade overlay for better readability -->
             <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 30px; background: linear-gradient(transparent, var(--bg-secondary)); pointer-events: none; border-radius: 0 0 var(--radius-md) var(--radius-md);"></div>
@@ -226,17 +226,18 @@
                     statusIcon.classList.remove('pulse');
                 }
                 
-                // Update sync time
-                document.getElementById('last-sync-time').innerText = 'Ultima Sincronizzazione: ' + data.last_sync;
+                // Update sync time with translation
+                const lastSyncLabel = '{{ _('dashboard.stats.last_sync') }}';
+                document.getElementById('last-sync-time').innerText = lastSyncLabel + ': ' + data.last_sync;
                 document.getElementById('last-sync-short').innerText = data.last_sync;
 
                 // Update buttons with better UX
                 const buttons = document.querySelectorAll('.btn');
-                const runningText = 'Esecuzione in corso...';
+                const runningText = '{{ _('status_messages.running') }}';
                 const originalTexts = {
-                    'btn-sync': 'Sincronizza Tutto Ora',
-                    'btn-cleanup': 'Avvia solo Pulizia',
-                    'btn-index': 'Aggiorna Indice Libreria'
+                    'btn-sync': '{{ _('dashboard.actions.sync_now') }}',
+                    'btn-cleanup': '{{ _('dashboard.actions.cleanup_only') }}',
+                    'btn-index': '{{ _('dashboard.actions.build_index') }}'
                 };
 
                 buttons.forEach(button => {
@@ -264,11 +265,11 @@
                 updateStats();
             })
             .catch(error => {
-                console.error('Errore durante l\'aggiornamento della dashboard:', error);
+                console.error('{{ _('status_messages.console_error') }}', error);
                 // Show error state
                 const statusText = document.getElementById('status-text');
                 const statusIcon = document.getElementById('status-icon');
-                statusText.innerText = 'Errore di connessione';
+                statusText.innerText = '{{ _('errors.connection_error') }}';
                 statusText.className = 'fs-4 fw-bold mb-0 text-danger';
                 statusIcon.setAttribute('data-lucide', 'wifi-off');
                 statusIcon.style.color = 'var(--accent-red)';
