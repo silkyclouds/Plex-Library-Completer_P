@@ -5,115 +5,138 @@
 ![Plex](https://img.shields.io/badge/Plex-Media%20Server-orange?style=for-the-badge&logo=plex)
 ![Gemini](https://img.shields.io/badge/Google%20Gemini-AI%20Playlists-purple?style=for-the-badge&logo=google)
 
-Uno script Python, eseguito tramite Docker, per mantenere sincronizzate le playlist musicali di Plex con servizi di streaming come Spotify e Deezer. Include funzionalità avanzate come la creazione di playlist settimanali tramite IA con Google Gemini e il download automatico dei brani mancanti tramite `streamrip`.
+A Python script, executed via Docker, to keep Plex music playlists synchronized with streaming services like Spotify and Deezer. Includes advanced features such as weekly AI playlist creation with Google Gemini and automatic download of missing tracks via `streamrip`.
 
-## ✨ Funzionalità Principali
+## ✨ Key Features
 
-- **Sincronizzazione Multi-Piattaforma**: Sincronizza le playlist pubbliche da **Spotify** e **Deezer** direttamente nella tua libreria Plex.
-- **Gestione Multi-Utente**: Supporta la sincronizzazione per più utenti Plex, ognuno con le proprie playlist e configurazioni.
-- **Playlist AI Settimanali**: Utilizza l'API di **Google Gemini** per analizzare i gusti di un utente (basandosi su una playlist di "preferiti") e generare una nuova playlist personalizzata ogni settimana.
-- **Completamento Automatico**: Identifica le tracce delle playlist che mancano nella tua libreria Plex.
-- **Download Automatico**: Utilizza **`streamrip`** per cercare e scaricare automaticamente da Deezer gli album contenenti i brani mancanti, completando di fatto la tua libreria.
-- **Pulizia Programmata**: Rimuove automaticamente le vecchie playlist per mantenere la libreria ordinata.
-- **Esecuzione in Background**: Progettato per essere eseguito 24/7 in un container Docker, con cicli di sincronizzazione personalizzabili.
-- **Statistiche Veloci**: I grafici vengono generati partendo dalla playlist dei brani preferiti, velocizzando l'elaborazione anche su librerie molto grandi.
+- **Multi-Platform Synchronization**: Synchronizes public playlists from **Spotify** and **Deezer** directly into your Plex library.
+- **Multi-User Management**: Supports synchronization for multiple Plex users, each with their own playlists and configurations.
+- **Weekly AI Playlists**: Uses the **Google Gemini** API to analyze a user's taste (based on a "favorites" playlist) and generate a new personalized playlist every week.
+- **Automatic Completion**: Identifies playlist tracks that are missing from your Plex library.
+- **Automatic Download**: Uses **`streamrip`** to automatically search and download albums containing missing tracks from Deezer, effectively completing your library.
+- **Scheduled Cleanup**: Automatically removes old playlists to keep the library organized.
+- **Background Execution**: Designed to run 24/7 in a Docker container, with customizable synchronization cycles.
+- **Fast Statistics**: Charts are generated from the favorite tracks playlist, speeding up processing even on very large libraries.
+- **Multilingual Interface**: Full bilingual support (English/Italian) with automatic language detection and seamless switching.
 
-## 🚀 Iniziare
+## 🌐 Internationalization
 
-### Prerequisiti
+The application features a complete bilingual interface supporting both **English** and **Italian** languages:
 
--   [Docker](https://www.docker.com/products/docker-desktop/) e Docker Compose installati.
--   Un server Plex con accesso amministrativo.
--   Un account [Deezer](https://www.deezer.com) (per ottenere l'ARL).
--   Un account [Spotify for Developers](https://developer.spotify.com/dashboard) (per le credenziali API).
--   Un account [Google AI Studio](https://aistudio.google.com/) (per la chiave API di Gemini).
+### Language Features
+- **Automatic Detection**: The interface automatically detects the user's preferred language from browser settings
+- **Manual Switching**: Users can manually switch between languages using the language selector
+- **Complete Translation**: All interface elements are translated including:
+  - Dashboard and navigation menus
+  - Chart labels and statistics
+  - AI assistant messages and prompts
+  - Error messages and notifications
+  - Form placeholders and buttons
 
-### ⚙️ Installazione e Configurazione
+### How Language Switching Works
+- **Session-Based**: Language preference is stored in the user's session
+- **Dynamic Charts**: All statistical charts (genre distribution, artist rankings, etc.) update their labels based on the selected language
+- **AI Integration**: The AI assistant adapts its responses and suggestions to the selected language
+- **Real-Time**: Language changes take effect immediately without requiring a page refresh
 
-1.  **Clona il Repository**
-    (Una volta pubblicato su GitHub)
+The language system is powered by a custom i18n service with JSON-based translation files located in `plex_playlist_sync/translations/`.
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+-   [Docker](https://www.docker.com/products/docker-desktop/) and Docker Compose installed.
+-   A Plex server with administrative access.
+-   A [Deezer](https://www.deezer.com) account (to obtain the ARL).
+-   A [Spotify for Developers](https://developer.spotify.com/dashboard) account (for API credentials).
+-   A [Google AI Studio](https://aistudio.google.com/) account (for Gemini API key).
+
+### ⚙️ Installation and Configuration
+
+1.  **Clone the Repository**
+    (Once published on GitHub)
     ```bash
-    git clone <URL_DEL_TUO_REPOSITORY_PRIVATO>
+    git clone <YOUR_PRIVATE_REPOSITORY_URL>
     cd Plex-Library-Completer
     ```
 
-2.  **Crea il file `.env`**
-    Copia il file di esempio `.env.example` nella radice del progetto e rinominalo in `.env`.
+2.  **Create the `.env` file**
+    Copy the example file `.env.example` in the project root and rename it to `.env`.
     ```bash
     cp .env.example .env
     ```
-    Successivamente, apri il file `.env` e inserisci tutti i tuoi valori personali.
+    Then open the `.env` file and enter all your personal values.
 
-3.  **Crea il file `config.toml`**
-    Questo file è per la configurazione di `streamrip`. Copia `config.example.toml` e rinominalo in `config.toml`.
+3.  **Create the `config.toml` file**
+    This file is for `streamrip` configuration. Copy `config.example.toml` and rename it to `config.toml`.
     ```bash
     cp config.example.toml config.toml
     ```
-    Apri `config.toml` e inserisci il tuo ARL di Deezer.
+    Open `config.toml` and enter your Deezer ARL.
 
-4.  **Verifica i Percorsi dei Volumi**
-    Apri il file `docker-compose.yml` e assicurati che il percorso della tua libreria musicale sia corretto. Sostituisci `M:\Organizzata` con il percorso reale sul tuo PC.
+4.  **Verify Volume Paths**
+    Open the `docker-compose.yml` file and make sure the path to your music library is correct. Replace `M:\Organizzata` with the actual path on your PC.
     ```yaml
     volumes:
-      - M:\Organizzata:/music # <-- Modifica questo percorso
-      # ... altri volumi
+      - M:\Organizzata:/music # <-- Modify this path
+      # ... other volumes
     ```
 
-### ▶️ Esecuzione
+### ▶️ Execution
 
-Per avviare il container in background:
+To start the container in the background:
 ```bash
 docker-compose up -d --build
 ```
-Il flag `--build` è consigliato la prima volta o dopo modifiche al codice.
+The `--build` flag is recommended the first time or after code changes.
 
-Per visualizzare i log in tempo reale:
+To view logs in real time:
 ```bash
 docker-compose logs -f
 ```
 
-Per fermare il container:
+To stop the container:
 ```bash
 docker-compose down
 ```
 
-##  Variables d'Ambiente (`.env`)
+## Environment Variables (`.env`)
 
-Questa è la lista completa delle variabili da configurare nel file `.env`.
+This is the complete list of variables to configure in the `.env` file.
 
-| Variabile                       | Descrizione                                                                                              | Esempio                                       |
+| Variable                       | Description                                                                                              | Example                                       |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| `PLEX_URL`                      | URL del tuo server Plex.                                                                                 | `http://192.168.1.10:32400`                   |
-| `PLEX_TOKEN`                    | Token di accesso per l'utente Plex principale.                                                           | `yourPlexTokenHere`                           |
-| `PLEX_TOKEN_USERS`              | Token di accesso per l'utente Plex secondario (opzionale).                                               | `secondaryUserPlexToken`                      |
-| `LIBRARY_NAME`                  | Nome esatto della tua libreria musicale su Plex.                                                         | `Musica`                                      |
-| `DEEZER_PLAYLIST_ID`            | ID numerici delle playlist Deezer da sincronizzare per l'utente principale, separati da virgola.         | `12345678,87654321`                           |
-| `DEEZER_PLAYLIST_ID_SECONDARY`  | ID delle playlist Deezer per l'utente secondario, separati da virgola (opzionale).                       | `98765432`                                    |
-| `SPOTIFY_CLIENT_ID`             | Client ID ottenuto dalla dashboard per sviluppatori di Spotify.                                          | `yourSpotifyClientID`                         |
-| `SPOTIFY_CLIENT_SECRET`         | Client Secret ottenuto dalla dashboard per sviluppatori di Spotify.                                      | `yourSpotifyClientSecret`                     |
-| `GEMINI_API_KEY`                | Chiave API ottenuta da Google AI Studio per le funzioni AI.                                              | `yourGeminiApiKey`                            |
-| `PLEX_FAVORITES_PLAYLIST_ID_MAIN` | Rating Key (ID numerico) della playlist Plex dei "preferiti" per l'utente principale (per l'IA).         | `12345`                                       |
-| `PLEX_FAVORITES_PLAYLIST_ID_SECONDARY` | Rating Key della playlist "preferiti" per l'utente secondario (opzionale, per l'IA).                  | `54321`                                       |
-| `SECONDS_TO_WAIT`               | Secondi di attesa tra un ciclo di sincronizzazione e l'altro.                                            | `86400` (24 ore)                              |
-| `WEEKS_LIMIT`                   | Numero di settimane dopo cui le vecchie playlist vengono eliminate.                                      | `4`                                           |
-| `PRESERVE_TAG`                  | Se questo testo è nel titolo di una playlist, non verrà eliminata.                                       | `NO_DELETE`                                   |
-| `FORCE_DELETE_OLD_PLAYLISTS`    | Imposta a `1` per attivare la cancellazione automatica delle vecchie playlist.                           | `0` (disattivato)                             |
-| `RUN_DOWNLOADER`                | Imposta a `1` per attivare il download automatico dei brani mancanti.                                    | `1` (attivato)                                |
-| `RUN_GEMINI_PLAYLIST_CREATION`  | Imposta a `1` per attivare la creazione settimanale delle playlist AI.                                   | `1` (attivato)                                |
+| `PLEX_URL`                      | URL of your Plex server.                                                                                | `http://192.168.1.10:32400`                   |
+| `PLEX_TOKEN`                    | Access token for the main Plex user.                                                                    | `yourPlexTokenHere`                           |
+| `PLEX_TOKEN_USERS`              | Access token for the secondary Plex user (optional).                                                    | `secondaryUserPlexToken`                      |
+| `LIBRARY_NAME`                  | Exact name of your music library on Plex.                                                               | `Music`                                       |
+| `DEEZER_PLAYLIST_ID`            | Numeric IDs of Deezer playlists to sync for the main user, comma-separated.                           | `12345678,87654321`                           |
+| `DEEZER_PLAYLIST_ID_SECONDARY`  | Deezer playlist IDs for the secondary user, comma-separated (optional).                               | `98765432`                                    |
+| `SPOTIFY_CLIENT_ID`             | Client ID obtained from Spotify for Developers dashboard.                                              | `yourSpotifyClientID`                         |
+| `SPOTIFY_CLIENT_SECRET`         | Client Secret obtained from Spotify for Developers dashboard.                                          | `yourSpotifyClientSecret`                     |
+| `GEMINI_API_KEY`                | API key obtained from Google AI Studio for AI functions.                                              | `yourGeminiApiKey`                            |
+| `PLEX_FAVORITES_PLAYLIST_ID_MAIN` | Rating Key (numeric ID) of the "favorites" Plex playlist for the main user (for AI).                 | `12345`                                       |
+| `PLEX_FAVORITES_PLAYLIST_ID_SECONDARY` | Rating Key of the "favorites" playlist for the secondary user (optional, for AI).                   | `54321`                                       |
+| `SECONDS_TO_WAIT`               | Seconds to wait between synchronization cycles.                                                        | `86400` (24 hours)                            |
+| `WEEKS_LIMIT`                   | Number of weeks after which old playlists are deleted.                                                 | `4`                                           |
+| `PRESERVE_TAG`                  | If this text is in a playlist title, it will not be deleted.                                          | `NO_DELETE`                                   |
+| `FORCE_DELETE_OLD_PLAYLISTS`    | Set to `1` to enable automatic deletion of old playlists.                                             | `0` (disabled)                                |
+| `RUN_DOWNLOADER`                | Set to `1` to enable automatic download of missing tracks.                                            | `1` (enabled)                                 |
+| `RUN_GEMINI_PLAYLIST_CREATION`  | Set to `1` to enable weekly AI playlist creation.                                                     | `1` (enabled)                                 |
 
-## Struttura del Progetto
+## Project Structure
 
 ```
 Plex-Library-Completer/
-├── .env                  # Le tue variabili d'ambiente segrete
-├── .gitignore            # File e cartelle da ignorare per Git
-├── config.toml           # Configurazione di Streamrip (es. ARL)
-├── docker-compose.yml    # File di orchestrazione di Docker
-├── Dockerfile            # Istruzioni per costruire l'immagine
-├── README.md             # Questo file
-├── requirements.txt      # Dipendenze Python
+├── .env                  # Your secret environment variables
+├── .gitignore            # Files and folders to ignore for Git
+├── config.toml           # Streamrip configuration (e.g. ARL)
+├── docker-compose.yml    # Docker orchestration file
+├── Dockerfile            # Instructions to build the image
+├── README.md             # This file
+├── requirements.txt      # Python dependencies
 │
-└── plex_playlist_sync/   # Codice sorgente dell'applicazione
+└── plex_playlist_sync/   # Application source code
     ├── run.py
     └── utils/
         ├── cleanup.py
@@ -121,8 +144,8 @@ Plex-Library-Completer/
         ├── downloader.py
         └── ...
 ```
-## Image exemple
-![alt text](im1.jpg)
-![alt text](im2.jpg)
-![alt text](im3.jpg)
-![alt text](im4.jpg)
+## Example Images
+![alt text](index.png)
+![alt text](missing_tracks.png)
+![alt text](stats.png)
+![alt text](ai_lab.png)
