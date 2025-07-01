@@ -1,4 +1,3 @@
-# utils/deezer.py
 import logging
 from typing import List
 import requests
@@ -9,17 +8,18 @@ from .plex import update_or_create_plex_playlist
 
 DEEZER_API_URL = "https://api.deezer.com"
 
+
 def _get_all_tracks_from_playlist(tracklist_url: str) -> List[Track]:
     """
-    Recupera TUTTE le tracce da un URL di tracklist, gestendo la paginazione.
+    Retrieve ALL tracks from a Deezer playlist URL, handling pagination.
     """
-    all_tracks = []
+    all_tracks: List[Track] = []
     url = tracklist_url
 
     while url:
         try:
             response = requests.get(url)
-            response.raise_for_status()  # Lancia un errore per status HTTP non 200
+            response.raise_for_status()
             data = response.json()
 
             for track_data in data.get('data', []):
@@ -30,52 +30,50 @@ def _get_all_tracks_from_playlist(tracklist_url: str) -> List[Track]:
                     url=track_data.get('link', '')
                 )
                 all_tracks.append(track)
-            
-            # Passa alla pagina successiva, se esiste
-            url = data.get('next', None)
+
+            # Move to next page if available
+            url = data.get('next')
             if url:
-                logging.debug(f"Paginazione Deezer: passo a {url}")
+                logging.debug(f"Deezer pagination: moving to {url}")
 
         except requests.exceptions.RequestException as e:
-            logging.error(f"Errore durante la richiesta alla tracklist di Deezer {url}: {e}")
-            break # Interrompe il ciclo in caso di errore di rete
+            logging.error(f"Network error fetching Deezer playlist at {url}: {e}")
+            break
         except Exception as e:
-            logging.error(f"Errore imprevisto durante il parsing delle tracce da Deezer: {e}")
+            logging.error(f"Unexpected error parsing Deezer tracks: {e}")
             break
 
     return all_tracks
 
 
-def deezer_playlist_sync(plex: PlexServer, userInputs: UserInputs) -> None:
+def deezer_playlist_sync(plex: PlexServer, user_inputs: UserInputs) -> None:
     """
-    Crea/Aggiorna le playlist di Plex usando le playlist di Deezer,
-    utilizzando richieste dirette all'API pubblica.
+    Create or update Plex playlists based on Deezer playlists using the public API.
     """
-    playlist_ids_str = userInputs.deezer_playlist_ids
+    playlist_ids_str = user_inputs.deezer_playlist_ids
     if not playlist_ids_str:
-        logging.info("Nessun ID di playlist Deezer fornito, salto la sincronizzazione Deezer.")
+        logging.info("No Deezer playlist IDs configured; skipping Deezer sync.")
         return
 
     playlist_ids = [pid.strip() for pid in playlist_ids_str.split(',') if pid.strip()]
-    suffix = " - Deezer" if userInputs.append_service_suffix else ""
-    limit = int(os.getenv("TEST_MODE_PLAYLIST_LIMIT", 0))
+    suffix = " - Deezer" if user_inputs.append_service_suffix else ""
+    limit = int(os.getenv("TEST_MODE_PLAYLIST_LIMIT", "0"))
 
-    for i, playlist_id in enumerate(playlist_ids):
-        if limit > 0 and i >= limit:
-            logging.warning(f"MODALITÀ TEST: Limite di {limit} playlist raggiunto per Deezer. Interrompo.")
+    for idx, playlist_id in enumerate(playlist_ids):
+        if limit > 0 and idx >= limit:
+            logging.warning(f"TEST MODE: reached limit of {limit} Deezer playlists; stopping.")
             break
 
-        logging.info(f"Sincronizzazione playlist Deezer con ID: {playlist_id}")
+        logging.info(f"Syncing Deezer playlist ID: {playlist_id}")
         playlist_url = f"{DEEZER_API_URL}/playlist/{playlist_id}"
-        
         try:
             response = requests.get(playlist_url)
             response.raise_for_status()
             playlist_data = response.json()
 
-            # Controlla se la playlist è valida (ad es. se non è privata)
             if 'error' in playlist_data:
-                logging.error(f"Errore dall'API Deezer per la playlist ID {playlist_id}: {playlist_data['error']['message']}")
+                message = playlist_data['error'].get('message', 'Unknown error')
+                logging.error(f"Deezer API error for playlist {playlist_id}: {message}")
                 continue
 
             playlist_obj = Playlist(
@@ -84,17 +82,15 @@ def deezer_playlist_sync(plex: PlexServer, userInputs: UserInputs) -> None:
                 description=playlist_data.get('description', ''),
                 poster=playlist_data.get('picture_big', '')
             )
-            
-            # Otteniamo le tracce usando la funzione che gestisce la paginazione
-            tracks = _get_all_tracks_from_playlist(playlist_data['tracklist'])
-            
+
+            tracks = _get_all_tracks_from_playlist(playlist_data.get('tracklist', ''))
             if tracks:
-                logging.info(f"Trovate {len(tracks)} tracce per la playlist '{playlist_obj.name}'.")
-                update_or_create_plex_playlist(plex, playlist_obj, tracks, userInputs)
+                logging.info(f"Found {len(tracks)} tracks in playlist '{playlist_obj.name}'")
+                update_or_create_plex_playlist(plex, playlist_obj, tracks, user_inputs)
             else:
-                logging.warning(f"Nessuna traccia trovata per la playlist '{playlist_obj.name}'.")
+                logging.warning(f"No tracks found for Deezer playlist '{playlist_obj.name}'")
 
         except requests.exceptions.RequestException as e:
-            logging.error(f"Errore nel recuperare la playlist Deezer ID {playlist_id}: {e}")
+            logging.error(f"Network error retrieving Deezer playlist {playlist_id}: {e}")
         except Exception as e:
-            logging.error(f"Errore imprevisto durante la sincronizzazione della playlist {playlist_id}: {e}")
+            logging.error(f"Unexpected error during Deezer sync for playlist {playlist_id}: {e}")
