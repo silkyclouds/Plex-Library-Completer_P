@@ -1,7 +1,7 @@
 [downloads]
-# Cartella dove i brani vengono scaricati (dentro al container)
+# Folder where tracks will be downloaded (inside the container)
 folder = "/music"
-# Mettiamo le opzioni che ci aveva chiesto prima
+# Set the options requested previously
 source_subdirectories = false
 disc_subdirectories = true
 concurrency = true
@@ -9,7 +9,7 @@ max_connections = 6
 requests_per_minute = 60
 verify_ssl = true
 
-# SEZIONE RICHIESTA DALL'ULTIMO ERRORE
+# SECTION REQUESTED BY THE LAST ERROR
 [qobuz]
 quality = 3
 download_booklets = true
@@ -19,7 +19,7 @@ password_or_token = ""
 app_id = ""
 secrets = []
 
-# Le altre sezioni che probabilmente chiederà dopo
+# Other sections that will likely be needed later
 [tidal]
 quality = 3
 download_videos = true
@@ -31,7 +31,7 @@ token_expiry = ""
 
 [deezer]
 quality = 1
-# Inserisci qui il tuo ARL valido
+# Insert your valid ARL here
 arl = "yourDeezerARL"
 use_deezloader = true
 deezloader_warnings = true
@@ -80,14 +80,13 @@ renumber_playlist_tracks = true
 exclude = []
 
 [filepaths]
-# Template per creare le cartelle Artista/Album
-folder_format = "{albumartist}/{title}"  # <-- USA {title} PER IL NOME DELL'ALBUM
-# Template per il nome del file
+# Template for creating Artist/Album folders
+folder_format = "{albumartist}/{title}"  # Use {title} for the album name
+# Template for track file names
 track_format = "{tracknumber:02d} - {title}"
 restrict_characters = false
 truncate_to = 120
 add_singles_to_folder = false
-
 
 [lastfm]
 source = "qobuz"
@@ -99,6 +98,6 @@ progress_bars = true
 max_search_results = 100
 
 [misc]
-# Sezione che ci aveva chiesto in uno degli errori precedenti
+# Version requested in one of the previous errors
 version = "2.0.6"
 check_for_updates = true
