@@ -1,102 +1,102 @@
-# Sistema di Verifica Tracce Migliorato
+# Improved Track Verification System
 
-## Problema Risolto
+## Resolved Issue
 
-Il sistema precedente di verifica delle tracce mancanti utilizzava solo **exact matching** sui nomi delle tracce, causando molti **falsi positivi**. Con una libreria di 250,000+ tracce, questo portava a segnalare come "mancanti" molte tracce che in realtà erano presenti nella libreria.
+The previous missing-tracks verification system used **exact matching** on track names only, which caused many **false positives**. With a library of 250,000+ tracks, it flagged as “missing” many tracks that were actually present.
 
-## Nuova Soluzione: Verifica Completa in 3 Livelli
+## New 3-Level Verification Solution
 
-### 1. **Exact Match** (Livello 1)
-- Ricerca esatta nell'indice del database locale
-- Veloce e precisa per tracce con metadati identici
+### 1. **Exact Match** (Level 1)
+- Performs a direct lookup in the local database index  
+- Fast and precise for tracks with identical metadata  
 
-### 2. **Fuzzy Match** (Livello 2) 
-- Utilizza algoritmi di similarità per trovare corrispondenze approssimative
-- Gestisce variazioni nei titoli come:
-  - `"Song Title"` vs `"Song Title (Remastered)"`
-  - `"Artist Name"` vs `"Artist Name feat. Someone"`
-  - Differenze minori di punteggiatura e spaziatura
-- Soglia di similarità: 85% (configurabile)
+### 2. **Fuzzy Match** (Level 2)
+- Uses similarity algorithms to find approximate matches  
+- Handles variations in titles such as:  
+  - `"Song Title"` vs. `"Song Title (Remastered)"`  
+  - `"Artist Name"` vs. `"Artist Name feat. Someone"`  
+  - Minor differences in punctuation or spacing  
+- Similarity threshold: 85% (configurable)  
 
-### 3. **Filesystem Check** (Livello 3)
-- Ricerca diretta nel filesystem `M:\Organizzata`
-- Utilizza pattern multipli per trovare file audio:
-  - `M:\Organizzata/**/Artista/**/*Titolo*.mp3`
-  - `M:\Organizzata/**/Artista/**/*Titolo*.flac`
-  - Pattern invertiti e permissivi per casi complessi
-- Supporta formati: MP3, FLAC, M4A
+### 3. **Filesystem Check** (Level 3)
+- Directly searches the filesystem at `M:\Organizzata`  
+- Uses multiple glob patterns to locate audio files:  
+  - `M:\Organizzata\**\Artist\**\*Title*.mp3`  
+  - `M:\Organizzata\**\Artist\**\*Title*.flac`  
+  - Inverted and permissive patterns for complex cases  
+- Supports formats: MP3, FLAC, M4A  
 
-## Come Utilizzare il Nuovo Sistema
+## How to Use the New System
 
-### Dalla Pagina Missing Tracks:
+### From the Missing Tracks Page
 
-1. **Accedi a** `http://localhost:5000/missing_tracks`
-2. **Clicca su** "Azioni" → **"Verifica Completa (Fuzzy + Filesystem)"**
-3. **Monitora i progressi** nella sezione status della homepage
-4. **Controlla i log** per vedere i dettagli dei match trovati
+1. **Go to** `http://localhost:5000/missing_tracks`  
+2. Click **Actions** → **“Full Verification (Fuzzy + Filesystem)”**  
+3. **Monitor progress** in the homepage status section  
+4. **Check logs** for details on each match  
 
-### Cosa Aspettarsi:
+### What to Expect
 
-- **Riduzione significativa** dei falsi positivi (testing mostra ~75% di riduzione)
-- **Maggiore accuratezza** nel rilevamento tracce veramente mancanti
-- **Feedback dettagliato** sui tipi di match trovati
+- **Significant reduction** in false positives (~75% reduction in tests)  
+- **Greater accuracy** in detecting truly missing tracks  
+- **Detailed feedback** on the type of match found  
 
-## Risultati di Test
+## Test Results
 
-La simulazione ha mostrato:
-- ✅ **75% di riduzione** dei falsi positivi
-- ✅ **Exact matches**: Per tracce con metadati identici
-- ✅ **Fuzzy matches**: Per tracce con piccole variazioni
-- ✅ **Filesystem matches**: Per tracce non indicizzate ma presenti su disco
+Simulation showed:  
+- ✅ **75% reduction** in false positives  
+- ✅ **Exact matches**: perfect metadata matches  
+- ✅ **Fuzzy matches**: small variations handled  
+- ✅ **Filesystem matches**: tracks present on disk but not indexed  
 
-## Log di Esempio
+### Sample Log Output
 
 ```
-INFO: FALSO POSITIVO (EXACT): 'Bohemian Rhapsody' - 'Queen' trovato nell'indice
-INFO: FALSO POSITIVO (FUZZY): 'Hotel California' - 'Eagles' trovato con fuzzy matching  
-INFO: FALSO POSITIVO (FILESYSTEM): 'Stairway to Heaven' - 'Led Zeppelin' trovato nel filesystem
-INFO: VERAMENTE MANCANTE: 'Track Inesistente' - 'Artista Inesistente'
+INFO: FALSE POSITIVE (EXACT): 'Bohemian Rhapsody' – 'Queen' found in index
+INFO: FALSE POSITIVE (FUZZY): 'Hotel California' – 'Eagles' matched via fuzzy
+INFO: FALSE POSITIVE (FILESYSTEM): 'Stairway to Heaven' – 'Led Zeppelin' found on filesystem
+INFO: TRULY MISSING: 'Nonexistent Track' – 'Unknown Artist'
 
-=== RISULTATI VERIFICA COMPLETA ===
-Tracce controllate: 18408
-Falsi positivi rimossi: 13806 (75.0%)
-  - Exact matches (indice): 8500
-  - Fuzzy matches (indice): 3200  
-  - Filesystem matches: 2106
-Tracce veramente mancanti: 4602
-Riduzione lista missing: 75.0%
+=== FULL VERIFICATION RESULTS ===
+Tracks checked: 18,408
+False positives removed: 13,806 (75.0%)
+  – Exact matches (index): 8,500
+  – Fuzzy matches (index): 3,200
+  – Filesystem matches: 2,106
+Truly missing tracks: 4,602
+Missing list reduction: 75.0%
 ```
 
-## Vantaggi del Nuovo Sistema
+## Benefits of the New System
 
-1. **Maggiore Precisione**: Riduce drasticamente i falsi positivi
-2. **Verifica Multi-Livello**: Copre diversi scenari di mismatch
-3. **Feedback Dettagliato**: Mostra esattamente come ogni traccia è stata trovata
-4. **Performance Intelligente**: Usa fallback progressivi (exact → fuzzy → filesystem)
-5. **Compatibilità Filesystem**: Gestisce path Windows e Linux/WSL
+1. **Higher Accuracy**: Dramatically reduces false positives  
+2. **Multi-Level Verification**: Covers multiple mismatch scenarios  
+3. **Detailed Feedback**: Clearly indicates how each track was found  
+4. **Smart Performance**: Progressive fallbacks (exact → fuzzy → filesystem)  
+5. **Filesystem Compatibility**: Supports both Windows and Linux/WSL paths  
 
-## Configurazione Avanzata
+## Advanced Configuration
 
-Il sistema è configurabile modificando i parametri in `database.py`:
+Modify parameters in `database.py` to tune the system:
 
 ```python
-# Soglia fuzzy matching (default: 85%)
+# Fuzzy matching threshold (default: 85%)
 threshold = 85
 
-# Path base filesystem (default: "M:\\Organizzata")  
-base_path = "M:\\Organizzata"
+# Base filesystem path (default: "M:\Organizzata")
+base_path = "M:\Organizzata"
 
-# Formati supportati
+# Supported formats
 formats = ['.mp3', '.flac', '.m4a']
 ```
 
-## Prossimi Passi Consigliati
+## Recommended Next Steps
 
-1. **Esegui la verifica completa** sulla lista attuale di 18,408 tracce
-2. **Monitora i risultati** per validare l'efficacia
-3. **Usa il download automatico** solo sulle tracce veramente mancanti rimaste
-4. **Ripeti periodicamente** per mantenere la lista pulita
+1. **Run full verification** on the current list of 18,408 tracks  
+2. **Monitor results** to validate effectiveness  
+3. **Use automatic download** only for the truly missing tracks  
+4. **Repeat periodically** to keep the missing list clean  
 
 ---
 
-**Nota**: Il nuovo sistema è progettato per essere **non distruttivo** - rimuove solo i falsi positivi confermati mantenendo tutte le tracce veramente mancanti nella lista.
+**Note:** This new system is designed to be **non-destructive**—it only removes confirmed false positives while preserving all genuinely missing tracks.
