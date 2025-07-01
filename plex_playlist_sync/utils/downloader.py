@@ -1,127 +1,164 @@
 import os
-import csv
 import logging
-import requests
 import subprocess
-from typing import List, Dict
 import time
 import unicodedata
+from typing import Dict, Optional, List
+
+from deezer import DeezerLinkFinder
+from tidal import TidalLinkFinder
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
+
+# Configuration from environment variables
+TEMP_DIR = os.environ.get('TEMP_DOWNLOAD_DIR', '/app/state')
+STREAMRIP_CONFIG = os.environ.get('STREAMRIP_CONFIG_PATH', '/root/.config/streamrip/config.toml')
+
+# Service credentials
+download_order = [s.strip().lower() for s in os.environ.get('DOWNLOAD_ORDER', 'tidal,deezer').split(',')]
+TIDAL_USERNAME = os.environ.get('TIDAL_USERNAME', '')
+TIDAL_PASSWORD = os.environ.get('TIDAL_PASSWORD', '')
+SPOTIFY_CLIENT_ID = os.environ.get('SPOTIFY_CLIENT_ID', '')
+SPOTIFY_CLIENT_SECRET = os.environ.get('SPOTIFY_CLIENT_SECRET', '')
+
+# Initialize Spotify client if configured
+spotify_client: Optional[spotipy.Spotify] = None
+if 'spotify' in download_order and SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET:
+    creds = SpotifyClientCredentials(client_id=SPOTIFY_CLIENT_ID, client_secret=SPOTIFY_CLIENT_SECRET)
+    spotify_client = spotipy.Spotify(auth_manager=creds)
+
 
 def clean_url(url: str) -> str:
     """
-    Rimuove caratteri invisibili come zero-width space dagli URL.
-    Questo risolve problemi con URL corrotti che causano errori di download.
+    Remove invisible Unicode characters (category Cf) and trim whitespace.
+    Prevents corrupted URLs causing download errors.
     """
     if not url:
-        return ""
-    
-    # Rimuove caratteri di controllo Unicode (categoria Cf) come zero-width space
-    cleaned = ''.join(char for char in url if unicodedata.category(char) != 'Cf')
-    
-    # Rimuove spazi extra all'inizio e alla fine
-    cleaned = cleaned.strip()
-    
-    # Log solo se è stato effettivamente pulito qualcosa
+        return ''
+    cleaned = ''.join(ch for ch in url if unicodedata.category(ch) != 'Cf').strip()
     if cleaned != url:
-        logging.info(f"URL pulito: '{url}' -> '{cleaned}'")
-    
+        logging.info(f"Cleaned URL: '{url}' -> '{cleaned}'")
     return cleaned
 
-class DeezerLinkFinder:
-    @staticmethod
-    def find_track_link(track_info: dict) -> str | None:
-        """
-        Cerca una singola traccia su Deezer e restituisce il link dell'album.
-        Questa funzione è usata dal downloader automatico.
-        """
-        try:
-            title = track_info.get("title", "").strip()
-            artist = track_info.get("artist", "").strip()
 
-            if not title or not artist:
-                return None
-
-            search_url = f'https://api.deezer.com/search?q=track:"{title}" artist:"{artist}"&limit=1'
-            response = requests.get(search_url)
-            response.raise_for_status()
-            deezer_data = response.json()
-
-            if deezer_data.get("data"):
-                album_id = deezer_data["data"][0].get("album", {}).get("id")
-                if album_id:
-                    album_link = f'https://www.deezer.com/album/{album_id}'
-                    # Non logghiamo qui per non intasare i log durante i cicli automatici
-                    return album_link
-            return None
-        except Exception:
-            # Silenziamo gli errori qui perché è un tentativo "best-effort"
-            return None
-
-    @staticmethod
-    def find_potential_tracks(title: str, artist: str) -> List[Dict]:
-        """
-        Cerca su Deezer e restituisce una lista di potenziali tracce per la ricerca manuale.
-        """
-        try:
-            search_url = f'https://api.deezer.com/search?q=track:"{title}" artist:"{artist}"&limit=10'
-            response = requests.get(search_url)
-            response.raise_for_status()
-            deezer_data = response.json()
-            logging.info(f"Ricerca manuale per '{title} - {artist}' ha restituito {len(deezer_data.get('data', []))} risultati.")
-            return deezer_data.get("data", [])
-        except Exception as e:
-            logging.error(f"Errore durante la ricerca manuale su Deezer per '{title} - {artist}': {e}")
-            return []
-
-def download_single_track_with_streamrip(link: str):
+def download_with_streamrip(link: str) -> None:
     """
-    Lancia streamrip per scaricare un singolo URL.
+    Invoke streamrip to download a single URL with timeout and cleanup.
     """
     if not link:
-        logging.info("Nessun link da scaricare fornito.")
+        logging.info('No link provided for download.')
         return
-
-    # Pulisci l'URL da caratteri invisibili prima del download
     cleaned_link = clean_url(link)
     if not cleaned_link:
-        logging.error("URL vuoto dopo la pulizia, download annullato.")
+        logging.error('Cleaned URL is empty, aborting download.')
         return
 
-    # Assicura che la directory temp esista
-    temp_dir = "/app/state"
-    if not os.path.exists(temp_dir):
-        try:
-            os.makedirs(temp_dir, exist_ok=True)
-            logging.info(f"📁 Creata directory temporanea: {temp_dir}")
-        except Exception as e:
-            logging.error(f"❌ Impossibile creare directory {temp_dir}: {e}")
-            # Fallback su directory corrente
-            temp_dir = "."
-    
-    temp_links_file = f"{temp_dir}/temp_download_{int(time.time())}.txt"
+    # Ensure temporary directory exists
     try:
-        with open(temp_links_file, "w", encoding="utf-8") as f:
-            f.write(f"{cleaned_link}\n")
-        
-        logging.info(f"Avvio del download con streamrip per il link: {cleaned_link}")
-        config_path = "/root/.config/streamrip/config.toml"
-        command = ["rip", "--config-path", config_path, "file", temp_links_file]
-        
-        # Aggiungiamo un timeout per evitare che il processo si blocchi all'infinito
-        process = subprocess.run(command, capture_output=True, text=True, check=True, encoding='utf-8', timeout=1800)
-        logging.info(f"Download di {cleaned_link} completato con successo.")
-        if process.stdout:
-             logging.debug(f"Output di streamrip per {cleaned_link}:\n{process.stdout}")
-        if process.stderr:
-             logging.warning(f"Output di warning da streamrip per {cleaned_link}:\n{process.stderr}")
-
-    except subprocess.CalledProcessError as e:
-        logging.error(f"Errore durante l'esecuzione di streamrip per {cleaned_link}.")
-        if e.stdout: logging.error(f"Output Standard (stdout):\n{e.stdout}")
-        if e.stderr: logging.error(f"Output di Errore (stderr):\n{e.stderr}")
+        os.makedirs(TEMP_DIR, exist_ok=True)
     except Exception as e:
-        logging.error(f"Un errore imprevisto è occorso durante l'avvio di streamrip per {cleaned_link}: {e}")
+        logging.error(f'Failed to create temp directory {TEMP_DIR}: {e}')
+        temp_dir_local = '.'
+    else:
+        temp_dir_local = TEMP_DIR
+
+    links_file = os.path.join(temp_dir_local, f'temp_links_{int(time.time())}.txt')
+    try:
+        with open(links_file, 'w', encoding='utf-8') as f:
+            f.write(cleaned_link + '\n')
+
+        logging.info(f'Starting streamrip download for: {cleaned_link}')
+        command = ['rip', '--config-path', STREAMRIP_CONFIG, 'file', links_file]
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=1800
+        )
+        logging.info(f'Download completed: {cleaned_link}')
+        if result.stdout:
+            logging.debug(f'Streamrip stdout:\n{result.stdout}')
+        if result.stderr:
+            logging.warning(f'Streamrip stderr:\n{result.stderr}')
+    except subprocess.CalledProcessError as e:
+        logging.error(f'Streamrip failed for {cleaned_link}: {e}')
+        if e.stdout:
+            logging.error(f'Stdout:\n{e.stdout}')
+        if e.stderr:
+            logging.error(f'Stderr:\n{e.stderr}')
+    except Exception as e:
+        logging.error(f'Unexpected error during streamrip download: {e}')
     finally:
-        if os.path.exists(temp_links_file):
-            os.remove(temp_links_file)
-            logging.info(f"File temporaneo di download rimosso: {temp_links_file}")
+        if os.path.exists(links_file):
+            try:
+                os.remove(links_file)
+            except Exception as e:
+                logging.warning(f'Failed to remove temp file {links_file}: {e}')
+
+
+def find_and_download_track(track_info: Dict) -> None:
+    """
+    Find and download a track by querying services in the configured order.
+    Supports 'spotify', 'tidal', 'deezer'.
+    """
+    title = track_info.get('title', '')
+    artist = track_info.get('artist', '')
+    if not title or not artist:
+        logging.error('Track info missing title or artist.')
+        return
+
+    link: Optional[str] = None
+    for service in download_order:
+        service = service.lower()
+        if service == 'spotify' and spotify_client:
+            try:
+                results = spotify_client.search(q=f'track:{title} artist:{artist}', type='track', limit=1)
+                items = results.get('tracks', {}).get('items', [])
+                if items:
+                    link = items[0]['external_urls']['spotify']
+                    logging.info(f'Found Spotify link for {title} - {artist}')
+                    break
+            except Exception as e:
+                logging.warning(f'Spotify lookup failed for {title} - {artist}: {e}')
+
+        elif service == 'tidal' and TIDAL_USERNAME and TIDAL_PASSWORD:
+            try:
+                tidal_finder = TidalLinkFinder(TIDAL_USERNAME, TIDAL_PASSWORD)
+                link = tidal_finder.find_track_link({'title': title, 'artist': artist})
+                if link:
+                    logging.info(f'Found Tidal link for {title} - {artist}')
+                    break
+            except Exception as e:
+                logging.warning(f'Tidal lookup failed for {title} - {artist}: {e}')
+
+        elif service == 'deezer':
+            deezer_link = DeezerLinkFinder.find_track_link({'title': title, 'artist': artist})
+            if deezer_link:
+                link = deezer_link
+                logging.info(f'Found Deezer link for {title} - {artist}')
+                break
+
+        else:
+            logging.debug(f'Service {service} is not configured or unsupported.')
+
+    if not link:
+        logging.error(f'No streaming link found for {title} - {artist}')
+        return
+
+    download_with_streamrip(link)
+
+
+if __name__ == '__main__':
+    # Batch processing: read tracks from CSV file and download each
+    import csv
+    input_csv = os.environ.get('TRACKS_CSV', 'tracks_to_download.csv')
+    try:
+        with open(input_csv, newline='', encoding='utf-8') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                find_and_download_track(row)
+    except FileNotFoundError:
+        logging.error(f'Tracks CSV file not found: {input_csv}')
+    except Exception as e:
+        logging.error(f'Error reading CSV file {input_csv}: {e}')
